@@ -1,6 +1,6 @@
 [package]
 name = "spiffe"
-version = "0.1.0"
+version = "0.0.0"
 edition = "2021"
 
 [dependencies]
@@ -8,5 +8,11 @@ prost = "0.12.4"
 prost-types = "0.12.4"
 tonic = "0.11.0"
 
+serde = { version = "1.0.202", optional = true }
+thiserror = "1.0.61"
+
 [build-dependencies]
 tonic-build = "0.11.0"
+
+[features]
+serde = ["dep:serde"]
