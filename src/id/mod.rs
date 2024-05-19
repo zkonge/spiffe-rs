@@ -2,7 +2,10 @@ mod error;
 #[cfg(feature = "serde")]
 mod serde_support;
 
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::{
+    fmt::{Display, Formatter, Result as FmtResult},
+    str::FromStr,
+};
 
 pub use error::SpiffeIdError;
 const SPIFFE_SCHEMA: &str = "spiffe://";
@@ -89,6 +92,14 @@ impl SpiffeId {
 
     pub fn path(&self) -> &str {
         &self.data[self.path_offset as usize..]
+    }
+}
+
+impl FromStr for SpiffeId {
+    type Err = SpiffeIdError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
     }
 }
 
