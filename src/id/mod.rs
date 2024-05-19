@@ -3,14 +3,14 @@ mod error;
 mod serde_support;
 
 use std::{
-    fmt::{Display, Formatter, Result as FmtResult},
+    fmt::{Debug, Display, Formatter, Result as FmtResult},
     str::FromStr,
 };
 
 pub use error::SpiffeIdError;
 const SPIFFE_SCHEMA: &str = "spiffe://";
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 pub struct SpiffeId {
     data: Box<str>,
     path_offset: u8,
@@ -100,6 +100,15 @@ impl FromStr for SpiffeId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::parse(s)
+    }
+}
+
+impl Debug for SpiffeId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("SpiffeId")
+            .field("trust_domain", &self.trust_domain())
+            .field("path", &self.path())
+            .finish()
     }
 }
 
