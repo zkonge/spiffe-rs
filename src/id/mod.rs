@@ -8,18 +8,20 @@ use std::{
 };
 
 pub use error::SpiffeIdError;
+
 const SPIFFE_SCHEMA: &str = "spiffe://";
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 pub struct SpiffeId {
-    data: Box<str>,
-    path_offset: u8,
+    id: Box<str>,
+    path_offset: u16,
 }
 
 impl SpiffeId {
-    pub fn parse(id: &str) -> Result<Self, SpiffeIdError> {
+    pub fn parse(id: impl Into<Box<str>>) -> Result<Self, SpiffeIdError> {
         // following the SPIFFE ID standard
         // https://github.com/spiffe/spiffe/blob/67dc2b7d3f34f865be6d8bff20a7d6c6d29a4065/standards/SPIFFE-ID.md
+        let id: Box<str> = id.into();
 
         // 2. SPIFFE Identity
         if !id.starts_with(SPIFFE_SCHEMA) {
@@ -31,12 +33,11 @@ impl SpiffeId {
             return Err(SpiffeIdError::InvalidComponentLength);
         }
 
-        let id = id
+        // ASCII char would be ensured by the following check
+        let bid = id
+            .as_bytes()
             .get(SPIFFE_SCHEMA.len()..)
             .ok_or(SpiffeIdError::InvalidSchema)?;
-
-        // ASCII char would be ensured by the following check
-        let bid = id.as_bytes();
 
         // 2. SPIFFE Identity
         let (td, path) = bid
@@ -72,7 +73,7 @@ impl SpiffeId {
         }
 
         // 2.2. Path
-        for segment in path.split(|&c| c == b'/') {
+        for segment in path.split(|&c| c == b'/').skip(1) {
             match segment {
                 b"" => return Err(SpiffeIdError::EmptySegment),
                 b"." | b".." => return Err(SpiffeIdError::DotSegment),
@@ -80,18 +81,22 @@ impl SpiffeId {
             }
         }
 
+        let path_offset = td.len() + SPIFFE_SCHEMA.len();
+
         Ok(Self {
-            data: id.to_string().into_boxed_str(),
-            path_offset: td.len() as u8,
+            id,
+            path_offset: path_offset as u16,
         })
     }
 
+    #[inline]
     pub fn trust_domain(&self) -> &str {
-        &self.data[..self.path_offset as usize]
+        &self.id[SPIFFE_SCHEMA.len()..self.path_offset as usize]
     }
 
+    #[inline]
     pub fn path(&self) -> &str {
-        &self.data[self.path_offset as usize..]
+        &self.id[self.path_offset as usize..]
     }
 }
 
@@ -114,8 +119,7 @@ impl Debug for SpiffeId {
 
 impl Display for SpiffeId {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.write_str(SPIFFE_SCHEMA)?;
-        f.write_str(&self.data)
+        f.write_str(&self.id)
     }
 }
 
