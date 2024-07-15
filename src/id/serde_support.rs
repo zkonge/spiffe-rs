@@ -16,6 +16,6 @@ impl<'de> serde::Deserialize<'de> for super::SpiffeId {
     {
         let maybe_id: Cow<'_, str> = serde::Deserialize::deserialize(deserializer)?;
 
-        Self::parse(&maybe_id).map_err(serde::de::Error::custom)
+        Self::parse(maybe_id).map_err(serde::de::Error::custom)
     }
 }
