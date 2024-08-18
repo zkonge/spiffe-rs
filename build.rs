@@ -1,8 +1,10 @@
 fn main() {
-    let proto = "proto/workloadapi.proto";
+    let config = tonic_build::configure().disable_package_emission();
 
-    tonic_build::configure()
-        .disable_package_emission()
-        .compile(&[proto], &["proto"])
+    #[cfg(feature = "bytes")]
+    let config = config.bytes(&["."]);
+
+    config
+        .compile(&["proto/workloadapi.proto"], &["proto"])
         .unwrap();
 }
