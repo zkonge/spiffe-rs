@@ -7,7 +7,7 @@ use tonic::{
 const SPIFFE_METADATA_KEY: &str = "workload.spiffe.io";
 const SPIFFE_METADATA_VALUE: &str = "true";
 
-// used by the client to add the security header
+/// Used by the client to add the security header
 #[derive(Debug)]
 pub struct SpiffeMetadataAppender;
 
@@ -22,7 +22,7 @@ impl Interceptor for SpiffeMetadataAppender {
     }
 }
 
-// used by the server to verify the presence of the security header
+/// Used by the server to verify the presence of the security header
 #[derive(Debug)]
 pub struct SpiffeMetadataVerifier;
 

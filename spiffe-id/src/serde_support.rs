@@ -1,11 +1,11 @@
-use std::borrow::Cow;
+use alloc::borrow::Cow;
 
 impl serde::Serialize for super::SpiffeId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&self.to_string())
+        serializer.serialize_str(self.as_str())
     }
 }
 

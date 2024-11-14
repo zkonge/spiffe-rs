@@ -1,13 +1,17 @@
+#![no_std]
+extern crate alloc;
+
 mod error;
 #[cfg(feature = "serde")]
 mod serde_support;
 
-use std::{
+use alloc::boxed::Box;
+use core::{
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     str::FromStr,
 };
 
-pub use error::SpiffeIdError;
+pub use crate::error::SpiffeIdError;
 
 const SPIFFE_SCHEMA: &str = "spiffe://";
 
@@ -53,10 +57,7 @@ impl SpiffeId {
         }
 
         // 2.1. Trust Domain
-        if !td
-            .iter()
-            .all(|&c| matches!(c, b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_'))
-        {
+        if !td.iter().cloned().all(validate_trust_domain_charset) {
             return Err(SpiffeIdError::InvalidSpiffeChar);
         }
 
@@ -66,9 +67,7 @@ impl SpiffeId {
         }
 
         // 2.2. Path
-        if !path.iter().all(
-            |&c| matches!(c, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'/'),
-        ) {
+        if !path.iter().cloned().all(validate_path_charset) {
             return Err(SpiffeIdError::InvalidSpiffeChar);
         }
 
@@ -98,6 +97,11 @@ impl SpiffeId {
     pub fn path(&self) -> &str {
         &self.id[self.path_offset as usize..]
     }
+
+    #[inline]
+    pub const fn as_str(&self) -> &str {
+        &self.id
+    }
 }
 
 impl FromStr for SpiffeId {
@@ -123,8 +127,20 @@ impl Display for SpiffeId {
     }
 }
 
+#[inline]
+fn validate_trust_domain_charset(c: u8) -> bool {
+    matches!(c, b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_')
+}
+
+#[inline]
+fn validate_path_charset(c: u8) -> bool {
+    matches!(c, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'/')
+}
+
 #[cfg(test)]
 mod tests {
+    use alloc::string::ToString;
+
     use super::*;
 
     #[test]

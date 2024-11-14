@@ -1,7 +1,7 @@
-mod id;
 mod interceptor;
 mod proto;
 
-pub use id::{SpiffeId, SpiffeIdError};
-pub use interceptor::{SpiffeMetadataAppender, SpiffeMetadataVerifier};
-pub use proto::*;
+pub use crate::{
+    interceptor::{SpiffeMetadataAppender, SpiffeMetadataVerifier},
+    proto::*,
+};

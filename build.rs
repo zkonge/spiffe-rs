@@ -5,6 +5,6 @@ fn main() {
     let config = config.bytes(&["."]);
 
     config
-        .compile(&["proto/workloadapi.proto"], &["proto"])
+        .compile_protos(&["proto/workloadapi.proto"], &["proto"])
         .unwrap();
 }
