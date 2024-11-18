@@ -12,9 +12,23 @@ prost = "0.13.3"
 prost-types = "0.13.3"
 tonic = "0.12.3"
 
+# Used for the `wrapper` feature
+thiserror = { version = "2.0.3", default-features = false, optional = true }
+rustls-pki-types = { version = "1.10.0", features = [
+    "alloc",
+], default-features = false, optional = true }
+spiffe-id = { path = "spiffe-id", optional = true }
+
 [build-dependencies]
 tonic-build = "0.12.3"
 
 [features]
+default = ["wrapper"]
 # store protobuf bytes in [`bytes::Bytes`] instead of [`Vec<u8>`]
 bytes = []
+# expose useful type wrapper for SPIFFE workload
+wrapper = [
+    "dep:thiserror",
+    "dep:rustls-pki-types",
+    "dep:spiffe-id",
+]
