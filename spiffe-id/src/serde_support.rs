@@ -19,3 +19,23 @@ impl<'de> serde::Deserialize<'de> for super::SpiffeId {
         Self::parse(maybe_id).map_err(serde::de::Error::custom)
     }
 }
+
+impl serde::Serialize for super::TrustDomain<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for super::TrustDomain<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<super::TrustDomain<'de>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let maybe_id: Cow<'_, str> = serde::Deserialize::deserialize(deserializer)?;
+
+        maybe_id.try_into().map_err(serde::de::Error::custom)
+    }
+}

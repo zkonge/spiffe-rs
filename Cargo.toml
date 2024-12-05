@@ -13,7 +13,7 @@ prost-types = "0.13.3"
 tonic = "0.12.3"
 
 # Used for the `wrapper` feature
-thiserror = { version = "2.0.3", default-features = false, optional = true }
+thiserror = { version = "2.0.4", default-features = false, optional = true }
 rustls-pki-types = { version = "1.10.0", features = [
     "alloc",
 ], default-features = false, optional = true }
