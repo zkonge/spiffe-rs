@@ -1,4 +1,4 @@
-use alloc::boxed::Box;
+use alloc::{boxed::Box, string::String};
 use core::{
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     str::FromStr,
@@ -93,6 +93,18 @@ impl FromStr for SpiffeId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::parse(s)
+    }
+}
+
+impl From<SpiffeId> for Box<str> {
+    fn from(id: SpiffeId) -> Self {
+        id.id
+    }
+}
+
+impl From<SpiffeId> for String {
+    fn from(id: SpiffeId) -> Self {
+        id.id.into()
     }
 }
 

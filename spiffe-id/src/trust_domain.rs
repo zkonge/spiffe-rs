@@ -19,15 +19,15 @@ impl<'a> TrustDomain<'a> {
         })
     }
 
-    pub fn to_owned(&self) -> TrustDomain<'static> {
+    pub fn borrow(&'a self) -> Self {
         TrustDomain {
-            td: Cow::Owned(self.td.clone().into_owned()),
+            td: Cow::Borrowed(&self.td),
         }
     }
 
-    pub fn into_owned(self) -> TrustDomain<'static> {
+    pub fn to_owned(&self) -> TrustDomain<'static> {
         TrustDomain {
-            td: Cow::Owned(self.td.into_owned()),
+            td: Cow::Owned(self.td.clone().into_owned()),
         }
     }
 
@@ -69,6 +69,12 @@ impl<'a> TryFrom<Cow<'a, str>> for TrustDomain<'a> {
         validate_trust_domain(value.as_bytes())?;
 
         Ok(TrustDomain { td: value })
+    }
+}
+
+impl<'a> From<TrustDomain<'a>> for Cow<'a, str> {
+    fn from(value: TrustDomain<'a>) -> Self {
+        value.td
     }
 }
 
