@@ -27,8 +27,4 @@ default = ["wrapper"]
 # store protobuf bytes in [`bytes::Bytes`] instead of [`Vec<u8>`]
 bytes = []
 # expose useful type wrapper for SPIFFE workload
-wrapper = [
-    "dep:thiserror",
-    "dep:rustls-pki-types",
-    "dep:spiffe-id",
-]
+wrapper = ["dep:thiserror", "dep:rustls-pki-types", "dep:spiffe-id"]

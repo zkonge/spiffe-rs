@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter, Result as FmtResult};
+
 use rustls_pki_types::{CertificateDer, PrivatePkcs8KeyDer};
 use spiffe_id::{SpiffeId, SpiffeIdError};
 use thiserror::Error;
@@ -13,7 +15,7 @@ pub enum InvalidSvidError {
     EmptySvid,
 
     #[error("invalid DER data")]
-    InvalidDerData,
+    InvalidDerData(#[from] InvalidDerDataError),
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -104,9 +106,13 @@ impl TryFrom<X509svid> for X509Svid {
 
         Ok(Self {
             spiffe_id: SpiffeId::parse(value.spiffe_id)?,
-            svid: split_certs(&value.x509_svid)?,
+            svid: split_certificates(&value.x509_svid)
+                .map(|x| x.map(CertificateDer::into_owned))
+                .collect::<Result<Vec<_>, _>>()?,
             key: value.x509_svid_key.into(),
-            bundle: split_certs(&value.bundle)?,
+            bundle: split_certificates(&value.bundle)
+                .map(|x| x.map(CertificateDer::into_owned))
+                .collect::<Result<Vec<_>, _>>()?,
             hint: if value.hint.is_empty() {
                 None
             } else {
@@ -116,53 +122,78 @@ impl TryFrom<X509svid> for X509Svid {
     }
 }
 
-fn split_cert<'a>(raw: &'a [u8]) -> Result<(&'a [u8], CertificateDer<'a>), InvalidSvidError> {
-    const SHORT_FORM_LEN_MAX: u8 = 127;
-    const TAG_SEQUENCE: u8 = 0x30;
+#[derive(Error, Debug)]
+pub struct InvalidDerDataError;
 
-    // We expect all key formats to begin with a SEQUENCE, which requires at least 2 bytes
-    // in the short length encoding.
-    if raw.first() != Some(&TAG_SEQUENCE) || raw.len() < 2 {
-        return Err(InvalidSvidError::InvalidDerData);
+impl Display for InvalidDerDataError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "bad DER data")
     }
-
-    let (meta_len, value_len) = if raw[1] < SHORT_FORM_LEN_MAX {
-        // short form length
-        (2, raw[1] as usize)
-    } else {
-        // long form length
-        let length_of_length_bytes = (raw[1] & 0x7F) as usize; // pick the low 7 bits
-
-        if raw[2..].len() < length_of_length_bytes {
-            return Err(InvalidSvidError::InvalidDerData);
-        }
-
-        let length_bytes = raw
-            .get(2..2 + length_of_length_bytes)
-            .ok_or(InvalidSvidError::InvalidDerData)?;
-
-        let mut aligned_length_bytes = [0u8; size_of::<usize>()];
-        aligned_length_bytes[size_of::<usize>() - length_of_length_bytes..]
-            .copy_from_slice(length_bytes);
-
-        let content_len = usize::from_be_bytes(aligned_length_bytes);
-
-        (2 + length_of_length_bytes, content_len)
-    };
-
-    raw.split_at_checked(meta_len + value_len)
-        .map(|(cert_bytes, rem)| (rem, CertificateDer::from_slice(cert_bytes)))
-        .ok_or(InvalidSvidError::InvalidDerData)
 }
 
-pub fn split_certs(mut raw: &[u8]) -> Result<Vec<CertificateDer<'static>>, InvalidSvidError> {
-    let mut certs = Vec::new();
+type Tlv<'a> = (u8, usize, &'a [u8]);
 
-    while !raw.is_empty() {
-        let (remainder, cert) = split_cert(raw)?;
-        certs.push(cert.into_owned());
-        raw = remainder;
+fn read_der_tlv(der: &[u8]) -> Option<(&[u8], Tlv)> {
+    let [tag, first_len_byte, rem @ ..] = der else {
+        return None;
+    };
+
+    if *first_len_byte & 0x80 == 0 {
+        let (value, rem) = rem.split_at_checked(*first_len_byte as usize)?;
+        return Some((rem, (*tag, *first_len_byte as usize, value)));
     }
 
-    Ok(certs)
+    let len_len = *first_len_byte & 0x7f;
+    let (len_bytes, rem) = rem.split_at_checked(len_len as usize)?;
+
+    let len: usize = match len_bytes {
+        [a] => u32::from_le_bytes([*a, 0, 0, 0]) as _,
+        [a, b] => u32::from_le_bytes([*b, *a, 0, 0]) as _,
+        [a, b, c] => u32::from_le_bytes([*c, *b, *a, 0]) as _,
+        // Is it possible to have a 16 MiB+ X.509 certificate in real world?
+        _ => return None,
+    };
+
+    let (value, rem) = rem.split_at_checked(len)?;
+
+    Some((rem, (*tag, len, value)))
+}
+
+fn split_cert(raw: &[u8]) -> Option<(&[u8], CertificateDer<'_>)> {
+    let (rem, (0x30, _, _)) = read_der_tlv(raw)? else {
+        return None;
+    };
+
+    let cert = raw.get(..raw.len() - rem.len())?;
+
+    Some((rem, CertificateDer::from_slice(cert)))
+}
+
+pub struct CertificateIter<'a> {
+    der: &'a [u8],
+}
+
+impl<'a> Iterator for CertificateIter<'a> {
+    type Item = Result<CertificateDer<'a>, InvalidDerDataError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.der.is_empty() {
+            return None;
+        }
+
+        let (rem, cert) = match split_cert(self.der) {
+            Some((r, c)) => (r, Ok(c)),
+            None => ([].as_slice(), Err(InvalidDerDataError)),
+        };
+        self.der = rem;
+        Some(cert)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (if self.der.is_empty() { 0 } else { 1 }, None)
+    }
+}
+
+pub fn split_certificates(der: &[u8]) -> CertificateIter<'_> {
+    CertificateIter { der }
 }
