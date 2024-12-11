@@ -41,26 +41,18 @@ impl TryFrom<Jwtsvid> for JwtSvid {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+type OwnedPrivatePkcs8KeyDer = Box<[u8]>;
+
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct X509Svid {
     spiffe_id: SpiffeId,
     svid: Box<[CertificateDer<'static>]>,
-    key: PrivatePkcs8KeyDer<'static>,
+    key: OwnedPrivatePkcs8KeyDer,
     bundle: Box<[CertificateDer<'static>]>,
     hint: Option<Box<str>>,
 }
 
 impl X509Svid {
-    pub fn clone_with_key(&self) -> Self {
-        Self {
-            spiffe_id: self.spiffe_id.clone(),
-            svid: self.svid.clone(),
-            key: self.key.clone_key(),
-            bundle: self.bundle.clone(),
-            hint: self.hint.clone(),
-        }
-    }
-
     pub fn spiffe_id(&self) -> &SpiffeId {
         &self.spiffe_id
     }
@@ -69,8 +61,8 @@ impl X509Svid {
         &self.svid
     }
 
-    pub fn key(&self) -> &PrivatePkcs8KeyDer<'static> {
-        &self.key
+    pub fn key(&self) -> PrivatePkcs8KeyDer<'_> {
+        PrivatePkcs8KeyDer::from(self.key.as_ref())
     }
 
     pub fn bundle(&self) -> &[CertificateDer<'static>] {
