@@ -1,41 +1,45 @@
 use alloc::borrow::Cow;
 
-impl serde::Serialize for super::SpiffeId {
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::{SpiffeId, TrustDomain};
+
+impl Serialize for SpiffeId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer,
+        S: Serializer,
     {
         serializer.serialize_str(self.as_str())
     }
 }
 
-impl<'de> serde::Deserialize<'de> for super::SpiffeId {
-    fn deserialize<D>(deserializer: D) -> Result<super::SpiffeId, D::Error>
+impl<'de> Deserialize<'de> for SpiffeId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: serde::Deserializer<'de>,
+        D: Deserializer<'de>,
     {
-        let maybe_id: Cow<'_, str> = serde::Deserialize::deserialize(deserializer)?;
+        let maybe_id: Cow<'_, str> = Deserialize::deserialize(deserializer)?;
 
-        Self::parse(maybe_id).map_err(serde::de::Error::custom)
+        Self::parse(maybe_id).map_err(de::Error::custom)
     }
 }
 
-impl serde::Serialize for super::TrustDomain<'_> {
+impl Serialize for TrustDomain<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer,
+        S: Serializer,
     {
         serializer.serialize_str(self.as_str())
     }
 }
 
-impl<'de> serde::Deserialize<'de> for super::TrustDomain<'de> {
-    fn deserialize<D>(deserializer: D) -> Result<super::TrustDomain<'de>, D::Error>
+impl<'a, 'de: 'a> Deserialize<'de> for TrustDomain<'a> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: serde::Deserializer<'de>,
+        D: Deserializer<'de>,
     {
-        let maybe_id: Cow<'_, str> = serde::Deserialize::deserialize(deserializer)?;
+        let maybe_id: Cow<'_, str> = Deserialize::deserialize(deserializer)?;
 
-        maybe_id.try_into().map_err(serde::de::Error::custom)
+        maybe_id.try_into().map_err(de::Error::custom)
     }
 }
