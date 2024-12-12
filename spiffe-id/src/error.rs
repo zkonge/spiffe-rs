@@ -5,8 +5,8 @@ pub enum SpiffeIdError {
     #[error("invalid URL schema")]
     InvalidSchema,
 
-    #[error("invalid SPIFFE char")]
-    InvalidSpiffeChar,
+    #[error("invalid SPIFFE ID character")]
+    InvalidSpiffeIdCharacter,
 
     #[error("invalid path separator")]
     InvalidPathSeparator,

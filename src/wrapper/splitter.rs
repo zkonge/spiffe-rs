@@ -1,4 +1,3 @@
-
 use rustls_pki_types::CertificateDer;
 
 use super::InvalidDerDataError;

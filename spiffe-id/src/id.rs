@@ -52,7 +52,7 @@ impl SpiffeId {
 
         // 2.2. Path
         if !path.iter().cloned().all(validate_path_charset) {
-            return Err(SpiffeIdError::InvalidSpiffeChar);
+            return Err(SpiffeIdError::InvalidSpiffeIdCharacter);
         }
 
         // 2.2. Path

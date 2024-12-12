@@ -34,7 +34,7 @@ const fn validate_trust_domain(td: &[u8]) -> Result<(), SpiffeIdError> {
 
     while i < td.len() {
         if !validate_trust_domain_charset(td[i]) {
-            return Err(SpiffeIdError::InvalidSpiffeChar);
+            return Err(SpiffeIdError::InvalidSpiffeIdCharacter);
         }
         i += 1;
     }
