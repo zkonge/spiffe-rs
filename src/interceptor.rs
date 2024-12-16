@@ -8,7 +8,7 @@ const SPIFFE_METADATA_KEY: &str = "workload.spiffe.io";
 const SPIFFE_METADATA_VALUE: &str = "true";
 
 /// Used by the client to add the security header
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct SpiffeMetadataAppender;
 
 impl Interceptor for SpiffeMetadataAppender {
@@ -23,7 +23,7 @@ impl Interceptor for SpiffeMetadataAppender {
 }
 
 /// Used by the server to verify the presence of the security header
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct SpiffeMetadataVerifier;
 
 impl Interceptor for SpiffeMetadataVerifier {
