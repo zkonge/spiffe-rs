@@ -1,7 +1,10 @@
-use alloc::{borrow::Cow, string::String};
+use alloc::{
+    borrow::{Cow, ToOwned},
+    string::String,
+};
 use core::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-use crate::{validate_trust_domain, SpiffeIdError};
+use crate::{validate_trust_domain, SpiffeIdError, SPIFFE_SCHEMA};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 pub struct TrustDomain<'a> {
@@ -9,10 +12,10 @@ pub struct TrustDomain<'a> {
 }
 
 impl<'a> TrustDomain<'a> {
-    pub const fn new(td: &'a str) -> Result<Self, SpiffeIdError> {
-        if let Err(e) = validate_trust_domain(td.as_bytes()) {
-            return Err(e);
-        }
+    pub fn new(td: &'a str) -> Result<Self, SpiffeIdError> {
+        let td = td.strip_prefix(SPIFFE_SCHEMA).unwrap_or(td);
+
+        validate_trust_domain(td.as_bytes())?;
 
         Ok(Self {
             td: Cow::Borrowed(td),
@@ -53,22 +56,26 @@ impl<'a> TryFrom<&'a str> for TrustDomain<'a> {
 impl TryFrom<String> for TrustDomain<'static> {
     type Error = SpiffeIdError;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        validate_trust_domain(value.as_bytes())?;
+    fn try_from(td: String) -> Result<Self, Self::Error> {
+        let td = td
+            .strip_prefix(SPIFFE_SCHEMA)
+            .map(ToOwned::to_owned)
+            .unwrap_or(td);
 
-        Ok(TrustDomain {
-            td: Cow::Owned(value),
-        })
+        validate_trust_domain(td.as_bytes())?;
+
+        Ok(TrustDomain { td: Cow::Owned(td) })
     }
 }
 
 impl<'a> TryFrom<Cow<'a, str>> for TrustDomain<'a> {
     type Error = SpiffeIdError;
 
-    fn try_from(value: Cow<'a, str>) -> Result<Self, Self::Error> {
-        validate_trust_domain(value.as_bytes())?;
-
-        Ok(TrustDomain { td: value })
+    fn try_from(td: Cow<'a, str>) -> Result<Self, Self::Error> {
+        match td {
+            Cow::Borrowed(td) => td.try_into(),
+            Cow::Owned(td) => td.try_into(),
+        }
     }
 }
 
