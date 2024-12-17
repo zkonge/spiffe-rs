@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use core::fmt::{Display, Formatter, Result as FmtResult};
 
 use spiffe_id::SpiffeIdError;
 use thiserror::Error;
