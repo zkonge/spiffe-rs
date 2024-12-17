@@ -12,14 +12,17 @@ pub struct JwtSvid {
 }
 
 impl JwtSvid {
+    #[inline]
     pub fn spiffe_id(&self) -> &SpiffeId {
         &self.spiffe_id
     }
 
+    #[inline]
     pub fn svid(&self) -> &str {
         &self.svid
     }
 
+    #[inline]
     pub fn hint(&self) -> Option<&str> {
         self.hint.as_deref()
     }
@@ -30,7 +33,7 @@ impl TryFrom<Jwtsvid> for JwtSvid {
 
     fn try_from(value: Jwtsvid) -> Result<Self, Self::Error> {
         Ok(Self {
-            spiffe_id: SpiffeId::parse(value.spiffe_id)?,
+            spiffe_id: SpiffeId::new(value.spiffe_id)?,
             svid: value.svid.into(),
             hint: if value.hint.is_empty() {
                 None
@@ -53,22 +56,27 @@ pub struct X509Svid {
 }
 
 impl X509Svid {
+    #[inline]
     pub fn spiffe_id(&self) -> &SpiffeId {
         &self.spiffe_id
     }
 
+    #[inline]
     pub fn svid(&self) -> &[CertificateDer<'static>] {
         &self.svid
     }
 
+    #[inline]
     pub fn key(&self) -> PrivatePkcs8KeyDer<'_> {
         PrivatePkcs8KeyDer::from(self.key.as_ref())
     }
 
+    #[inline]
     pub fn bundle(&self) -> &[CertificateDer<'static>] {
         &self.bundle
     }
 
+    #[inline]
     pub fn hint(&self) -> Option<&str> {
         self.hint.as_deref()
     }
@@ -83,7 +91,7 @@ impl TryFrom<X509svid> for X509Svid {
         }
 
         Ok(Self {
-            spiffe_id: SpiffeId::parse(value.spiffe_id)?,
+            spiffe_id: SpiffeId::new(value.spiffe_id)?,
             svid: split_certificates(&value.x509_svid)
                 .map(|x| x.map(CertificateDer::into_owned))
                 .collect::<Result<_, _>>()?,

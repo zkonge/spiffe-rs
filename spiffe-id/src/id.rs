@@ -15,26 +15,23 @@ pub struct SpiffeId {
 }
 
 impl SpiffeId {
-    pub fn parse(id: impl Into<Box<str>>) -> Result<Self, SpiffeIdError> {
+    pub fn new(id: impl Into<Box<str>>) -> Result<Self, SpiffeIdError> {
         // following the SPIFFE ID standard
         // https://github.com/spiffe/spiffe/blob/67dc2b7d3f34f865be6d8bff20a7d6c6d29a4065/standards/SPIFFE-ID.md
         let id: Box<str> = id.into();
-
-        // 2. SPIFFE Identity
-        if !id.starts_with(SPIFFE_SCHEMA) {
-            return Err(SpiffeIdError::InvalidSchema);
-        }
 
         // 2.3. Maximum SPIFFE ID Length
         if id.len() > 2048 {
             return Err(SpiffeIdError::InvalidComponentLength);
         }
 
+        // 2. SPIFFE Identity
+        let Some((SPIFFE_SCHEMA, sid)) = id.split_at_checked(SPIFFE_SCHEMA.len()) else {
+            return Err(SpiffeIdError::InvalidSchema);
+        };
+
         // ASCII char would be ensured by the following check
-        let bid = id
-            .as_bytes()
-            .get(SPIFFE_SCHEMA.len()..)
-            .ok_or(SpiffeIdError::InvalidSchema)?;
+        let bid = sid.as_bytes();
 
         // 2. SPIFFE Identity
         let (td, path) = bid
@@ -92,7 +89,7 @@ impl FromStr for SpiffeId {
     type Err = SpiffeIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::parse(s)
+        Self::new(s)
     }
 }
 
@@ -131,20 +128,17 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let id = SpiffeId::parse("spiffe://example.org/path").unwrap();
-        assert_eq!(
-            id.trust_domain(),
-            TrustDomain::parse("example.org").unwrap()
-        );
+        let id = SpiffeId::new("spiffe://example.org/path").unwrap();
+        assert_eq!(id.trust_domain(), TrustDomain::new("example.org").unwrap());
         assert_eq!(id.path(), "/path");
 
-        assert!(SpiffeId::parse("spiffe://example.org/").is_err());
-        assert!(SpiffeId::parse("spiffe://example.org/path/").is_err());
+        assert!(SpiffeId::new("spiffe://example.org/").is_err());
+        assert!(SpiffeId::new("spiffe://example.org/path/").is_err());
     }
 
     #[test]
     fn test_to_string() {
-        let id = SpiffeId::parse("spiffe://example.org/path").unwrap();
+        let id = SpiffeId::new("spiffe://example.org/path").unwrap();
         assert_eq!(id.to_string(), "spiffe://example.org/path");
     }
 }

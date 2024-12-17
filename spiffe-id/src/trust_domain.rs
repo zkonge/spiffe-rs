@@ -9,7 +9,7 @@ pub struct TrustDomain<'a> {
 }
 
 impl<'a> TrustDomain<'a> {
-    pub const fn parse(td: &'a str) -> Result<Self, SpiffeIdError> {
+    pub const fn new(td: &'a str) -> Result<Self, SpiffeIdError> {
         if let Err(e) = validate_trust_domain(td.as_bytes()) {
             return Err(e);
         }
@@ -35,7 +35,7 @@ impl<'a> TrustDomain<'a> {
         &self.td
     }
 
-    pub(crate) fn new_unchecked(td: &'a str) -> Self {
+    pub(crate) const fn new_unchecked(td: &'a str) -> Self {
         Self {
             td: Cow::Borrowed(td),
         }
@@ -46,7 +46,7 @@ impl<'a> TryFrom<&'a str> for TrustDomain<'a> {
     type Error = SpiffeIdError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Self::parse(value)
+        Self::new(value)
     }
 }
 

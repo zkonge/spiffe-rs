@@ -8,13 +8,13 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-prost = "0.13.3"
-prost-types = "0.13.3"
+prost = "0.13.4"
+prost-types = "0.13.4"
 tonic = "0.12.3"
 
 # Used for the `wrapper` feature
-thiserror = { version = "2.0.4", default-features = false, optional = true }
-rustls-pki-types = { version = "1.10.0", features = [
+thiserror = { version = "2.0.7", default-features = false, optional = true }
+rustls-pki-types = { version = "1.10.1", features = [
     "alloc",
 ], default-features = false, optional = true }
 spiffe-id = { path = "spiffe-id", optional = true }
@@ -22,9 +22,15 @@ spiffe-id = { path = "spiffe-id", optional = true }
 [build-dependencies]
 tonic-build = "0.12.3"
 
+[dev-dependencies]
+const-decoder = "0.4.0"
+
 [features]
 default = ["wrapper"]
 # store protobuf bytes in [`bytes::Bytes`] instead of [`Vec<u8>`]
 bytes = []
 # expose useful type wrapper for SPIFFE workload
 wrapper = ["dep:thiserror", "dep:rustls-pki-types", "dep:spiffe-id"]
+
+[profile.release]
+lto = true
