@@ -2,7 +2,7 @@ use rustls_pki_types::{CertificateDer, PrivatePkcs8KeyDer};
 use spiffe_id::SpiffeId;
 
 use super::{split_certificates, InvalidSvidError};
-use crate::{Jwtsvid, X509svid};
+use crate::{JwtSvid as ProtoJwtSvid, X509Svid as ProtoX509Svid};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct JwtSvid {
@@ -28,10 +28,10 @@ impl JwtSvid {
     }
 }
 
-impl TryFrom<Jwtsvid> for JwtSvid {
+impl TryFrom<ProtoJwtSvid> for JwtSvid {
     type Error = InvalidSvidError;
 
-    fn try_from(value: Jwtsvid) -> Result<Self, Self::Error> {
+    fn try_from(value: ProtoJwtSvid) -> Result<Self, Self::Error> {
         Ok(Self {
             spiffe_id: SpiffeId::new(value.spiffe_id)?,
             svid: value.svid.into(),
@@ -82,10 +82,10 @@ impl X509Svid {
     }
 }
 
-impl TryFrom<X509svid> for X509Svid {
+impl TryFrom<ProtoX509Svid> for X509Svid {
     type Error = InvalidSvidError;
 
-    fn try_from(value: X509svid) -> Result<Self, Self::Error> {
+    fn try_from(value: ProtoX509Svid) -> Result<Self, Self::Error> {
         if value.x509_svid.is_empty() || value.x509_svid_key.is_empty() || value.bundle.is_empty() {
             return Err(InvalidSvidError::EmptySvid);
         }

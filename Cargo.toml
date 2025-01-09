@@ -10,7 +10,7 @@ edition = "2021"
 [dependencies]
 prost = "0.13.4"
 prost-types = "0.13.4"
-tonic = "0.12.3"
+tonic = { version = "0.12.3", default-features = false, features = ["prost"] }
 
 # Used for the `wrapper` feature
 thiserror = { version = "2.0.7", default-features = false, optional = true }
@@ -18,9 +18,9 @@ rustls-pki-types = { version = "1.10.1", features = [
     "alloc",
 ], default-features = false, optional = true }
 spiffe-id = { path = "spiffe-id", optional = true }
-
-[build-dependencies]
-tonic-build = "0.12.3"
+http = "1.2.0"
+http-body = "1.0.1"
+bytes = "1.9.0"
 
 [dev-dependencies]
 const-decoder = "0.4.0"
