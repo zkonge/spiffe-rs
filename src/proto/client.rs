@@ -1,19 +1,39 @@
-use bytes::Bytes;
+use std::future::Future;
+
+use futures_util::TryFutureExt;
 use http::uri::{PathAndQuery, Uri};
 use http_body::Body;
+use prost::bytes::Bytes;
 use tonic::{
     body::BoxBody,
     client::{Grpc, GrpcService},
-    codec::CompressionEncoding,
-    codec::ProstCodec,
-    GrpcMethod, IntoRequest, Response, Status, Streaming,
+    codec::{CompressionEncoding, ProstCodec},
+    metadata::{MetadataKey, MetadataValue},
+    GrpcMethod, IntoRequest, Request, Response, Status, Streaming,
 };
 
 use super::{
-    JwtBundlesRequest, JwtBundlesResponse, JwtSvidRequest, JwtSvidResponse, StdError,
-    ValidateJwtSvidRequest, ValidateJwtSvidResponse, X509BundlesRequest, X509BundlesResponse,
-    X509SvidRequest, X509SvidResponse,
+    JwtBundlesRequest, JwtBundlesResponse, JwtSvidRequest, JwtSvidResponse, ValidateJwtSvidRequest,
+    ValidateJwtSvidResponse, X509BundlesRequest, X509BundlesResponse, X509SvidRequest,
+    X509SvidResponse, SPIFFE_METADATA_KEY, SPIFFE_METADATA_VALUE,
 };
+use crate::StdError;
+
+#[inline]
+fn make_request<T>(
+    mut req: Request<T>,
+    method: &'static str,
+    path: &'static str,
+) -> (Request<T>, PathAndQuery) {
+    req.extensions_mut()
+        .insert(GrpcMethod::new("SpiffeWorkloadAPI", method));
+    req.metadata_mut().insert(
+        MetadataKey::from_static(SPIFFE_METADATA_KEY),
+        MetadataValue::from_static(SPIFFE_METADATA_VALUE),
+    );
+
+    (req, PathAndQuery::from_static(path))
+}
 
 #[derive(Debug, Clone)]
 pub struct SpiffeWorkloadApiClient<T> {
@@ -70,23 +90,18 @@ where
     /// server.
     pub async fn fetch_x509_svid(
         &mut self,
-        request: impl IntoRequest<X509SvidRequest>,
+        req: impl IntoRequest<X509SvidRequest>,
     ) -> Result<Response<Streaming<X509SvidResponse>>, Status> {
-        self.inner
-            .ready()
-            .await
-            .map_err(|e| Status::unknown(format!("Service was not ready: {}", e.into())))?;
+        self.ready().await?;
 
-        let mut req = request.into_request();
+        let (req, path) = make_request(
+            req.into_request(),
+            "FetchX509SVID",
+            "/SpiffeWorkloadAPI/FetchX509SVID",
+        );
 
-        req.extensions_mut()
-            .insert(GrpcMethod::new("SpiffeWorkloadAPI", "FetchX509Svid"));
         self.inner
-            .server_streaming(
-                req,
-                PathAndQuery::from_static("/SpiffeWorkloadAPI/FetchX509Svid"),
-                ProstCodec::default(),
-            )
+            .server_streaming(req, path, ProstCodec::new())
             .await
     }
 
@@ -96,41 +111,37 @@ where
     /// server.
     pub async fn fetch_x509_bundles(
         &mut self,
-        request: impl IntoRequest<X509BundlesRequest>,
+        req: impl IntoRequest<X509BundlesRequest>,
     ) -> Result<Response<Streaming<X509BundlesResponse>>, Status> {
+        self.ready().await?;
+
+        let (req, path) = make_request(
+            req.into_request(),
+            "FetchX509Bundles",
+            "/SpiffeWorkloadAPI/FetchX509Bundles",
+        );
+
         self.inner
-            .ready()
-            .await
-            .map_err(|e| Status::unknown(format!("Service was not ready: {}", e.into())))?;
-        let mut req = request.into_request();
-        req.extensions_mut()
-            .insert(GrpcMethod::new("SpiffeWorkloadAPI", "FetchX509Bundles"));
-        self.inner
-            .server_streaming(
-                req,
-                PathAndQuery::from_static("/SpiffeWorkloadAPI/FetchX509Bundles"),
-                ProstCodec::new(),
-            )
+            .server_streaming(req, path, ProstCodec::new())
             .await
     }
 
     /// Fetch JWT-SVIDs for all SPIFFE identities the workload is entitled to,
     /// for the requested audience. If an optional SPIFFE ID is requested, only
     /// the JWT-SVID for that SPIFFE ID is returned.
-    pub async fn fetch_jwtsvid(
+    pub async fn fetch_jwt_svid(
         &mut self,
-        request: impl IntoRequest<JwtSvidRequest>,
+        req: impl IntoRequest<JwtSvidRequest>,
     ) -> Result<Response<JwtSvidResponse>, Status> {
-        self.inner
-            .ready()
-            .await
-            .map_err(|e| Status::unknown(format!("Service was not ready: {}", e.into())))?;
-        let codec = ProstCodec::default();
-        let path = PathAndQuery::from_static("/SpiffeWorkloadAPI/FetchJWTSVID");
-        let mut req = request.into_request();
-        req.extensions_mut()
-            .insert(GrpcMethod::new("SpiffeWorkloadAPI", "FetchJWTSVID"));
-        self.inner.unary(req, path, codec).await
+        self.ready().await?;
+
+        let (req, path) = make_request(
+            req.into_request(),
+            "FetchJWTSVID",
+            "/SpiffeWorkloadAPI/FetchJWTSVID",
+        );
+
+        self.inner.unary(req, path, ProstCodec::new()).await
     }
 
     /// Fetches the JWT bundles, formatted as JWKS documents, keyed by the
@@ -138,35 +149,41 @@ where
     /// messages will be streamed from the server.
     pub async fn fetch_jwt_bundles(
         &mut self,
-        request: impl IntoRequest<JwtBundlesRequest>,
+        req: impl IntoRequest<JwtBundlesRequest>,
     ) -> Result<Response<Streaming<JwtBundlesResponse>>, Status> {
+        self.ready().await?;
+
+        let (req, path) = make_request(
+            req.into_request(),
+            "FetchJWTBundles",
+            "/SpiffeWorkloadAPI/FetchJWTBundles",
+        );
+
         self.inner
-            .ready()
+            .server_streaming(req, path, ProstCodec::new())
             .await
-            .map_err(|e| Status::unknown(format!("Service was not ready: {}", e.into())))?;
-        let codec = ProstCodec::default();
-        let path = PathAndQuery::from_static("/SpiffeWorkloadAPI/FetchJWTBundles");
-        let mut req = request.into_request();
-        req.extensions_mut()
-            .insert(GrpcMethod::new("SpiffeWorkloadAPI", "FetchJWTBundles"));
-        self.inner.server_streaming(req, path, codec).await
     }
 
     /// Validates a JWT-SVID against the requested audience. Returns the SPIFFE
     /// ID of the JWT-SVID and JWT claims.
     pub async fn validate_jwtsvid(
         &mut self,
-        request: impl IntoRequest<ValidateJwtSvidRequest>,
+        req: impl IntoRequest<ValidateJwtSvidRequest>,
     ) -> Result<Response<ValidateJwtSvidResponse>, Status> {
+        self.ready().await?;
+
+        let (req, path) = make_request(
+            req.into_request(),
+            "ValidateJWTSVID",
+            "/SpiffeWorkloadAPI/ValidateJWTSVID",
+        );
+
+        self.inner.unary(req, path, ProstCodec::new()).await
+    }
+
+    fn ready(&mut self) -> impl Future<Output = Result<(), Status>> + use<'_, T> {
         self.inner
             .ready()
-            .await
-            .map_err(|e| Status::unknown(format!("Service was not ready: {}", e.into())))?;
-        let codec = ProstCodec::default();
-        let path = PathAndQuery::from_static("/SpiffeWorkloadAPI/ValidateJWTSVID");
-        let mut req = request.into_request();
-        req.extensions_mut()
-            .insert(GrpcMethod::new("SpiffeWorkloadAPI", "ValidateJWTSVID"));
-        self.inner.unary(req, path, codec).await
+            .map_err(|e| Status::unknown(format!("Service was not ready: {}", e.into())))
     }
 }

@@ -8,29 +8,57 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
+spiffe-id = { path = "spiffe-id", optional = true }
+
 prost = "0.13.4"
 prost-types = "0.13.4"
-tonic = { version = "0.12.3", default-features = false, features = ["prost"] }
+
+tonic = { version = "0.12.3", default-features = false, features = [
+    "prost",
+], optional = true }
+futures-util = { version = "0.3.31", default-features = false, features = [
+    "alloc",
+], optional = true }
+http = { version = "1.2.0", optional = true }
+http-body = { version = "1.0.1", optional = true }
 
 # Used for the `wrapper` feature
-thiserror = { version = "2.0.7", default-features = false, optional = true }
+thiserror = { version = "2.0.11", default-features = false, optional = true }
 rustls-pki-types = { version = "1.10.1", features = [
     "alloc",
 ], default-features = false, optional = true }
-spiffe-id = { path = "spiffe-id", optional = true }
-http = "1.2.0"
-http-body = "1.0.1"
-bytes = "1.9.0"
+tower-service = { version = "0.3.3", optional = true }
+kstring = { version = "2.0.2", features = ["max_inline"], optional = true }
+hyper = { version = "1.5.2", default-features = false, features = [
+    "client",
+    "http2",
+], optional = true }
+hyper-util = { version = "0.1.10", default-features = false, features = [
+    "tokio",
+], optional = true }
+tokio = { version = "1.43.0", default-features = false, features = [
+    "net",
+], optional = true }
 
 [dev-dependencies]
 const-decoder = "0.4.0"
 
 [features]
-default = ["wrapper"]
-# store protobuf bytes in [`bytes::Bytes`] instead of [`Vec<u8>`]
-bytes = []
+default = ["wrapper", "client"]
 # expose useful type wrapper for SPIFFE workload
-wrapper = ["dep:thiserror", "dep:rustls-pki-types", "dep:spiffe-id"]
+wrapper = [
+    "dep:thiserror",
+    "dep:rustls-pki-types",
+    "dep:spiffe-id",
+    "dep:tokio",
+    "dep:tower-service",
+    "dep:kstring",
+    "dep:hyper",
+    "dep:hyper-util",
+]
+client = ["dep:tonic", "dep:futures-util", "dep:http", "dep:http-body"]
+server = ["dep:tonic", "dep:futures-util", "dep:http", "dep:http-body"]
 
 [profile.release]
+opt-level = "s"
 lto = true

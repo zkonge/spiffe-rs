@@ -3,7 +3,7 @@ use core::str;
 use rustls_pki_types::CertificateDer;
 use spiffe_id::SpiffeId;
 
-use super::{InvalidDerDataError, InvalidSvidError};
+use super::{InvalidDerDataError, SpiffeError};
 
 type Tlv<'a> = (u8, &'a [u8]);
 
@@ -83,8 +83,8 @@ pub fn split_certificates(der: &[u8]) -> CertificateIter<'_> {
 const SAN_OID_ASN1_BYTES: [u8; 5] = [0x06, 0x03, 0x55, 0x1D, 0x11];
 
 /// Extracts SPIFFE ID from a trusted X.509 SVID
-pub fn spiffe_id_from_x509_svid(cert: &CertificateDer) -> Result<SpiffeId, InvalidSvidError> {
-    const INVALID_DER: InvalidSvidError = InvalidSvidError::InvalidDerData(InvalidDerDataError);
+pub fn spiffe_id_from_x509_svid(cert: &CertificateDer) -> Result<SpiffeId, SpiffeError> {
+    const INVALID_DER: SpiffeError = SpiffeError::InvalidDerData(InvalidDerDataError);
 
     // unpack the `Certificate`, ensure only one certificate is present
     let Some(([], (0x30, cert))) = read_der_tlv(cert.as_ref()) else {

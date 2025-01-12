@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
-use prost::Message;
+use prost::{bytes::Bytes, Message};
 use prost_types::Struct;
-
-
 
 /// The X509SVIDRequest message conveys parameters for requesting an X.509-SVID.
 /// There are currently no request parameters.
@@ -21,14 +19,14 @@ pub struct X509SvidResponse {
     pub svids: Vec<X509Svid>,
 
     /// Optional. ASN.1 DER encoded certificate revocation lists.
-    #[prost(bytes = "vec", repeated, tag = "2")]
-    pub crl: Vec<Vec<u8>>,
+    #[prost(bytes = "bytes", repeated, tag = "2")]
+    pub crl: Vec<Bytes>,
 
     /// Optional. CA certificate bundles belonging to foreign trust domains that
     /// the workload should trust, keyed by the SPIFFE ID of the foreign trust
     /// domain. Bundles are ASN.1 DER encoded.
     #[prost(map = "string, bytes", tag = "3")]
-    pub federated_bundles: HashMap<String, Vec<u8>>,
+    pub federated_bundles: HashMap<String, Bytes>,
 }
 
 /// The X509SVID message carries a single SVID and all associated information,
@@ -41,16 +39,16 @@ pub struct X509Svid {
 
     /// Required. ASN.1 DER encoded certificate chain. MAY include
     /// intermediates, the leaf certificate (or SVID itself) MUST come first.
-    #[prost(bytes = "vec", tag = "2")]
-    pub x509_svid: Vec<u8>,
+    #[prost(bytes = "bytes", tag = "2")]
+    pub x509_svid: Bytes,
 
     /// Required. ASN.1 DER encoded PKCS#8 private key. MUST be unencrypted.
-    #[prost(bytes = "vec", tag = "3")]
-    pub x509_svid_key: Vec<u8>,
+    #[prost(bytes = "bytes", tag = "3")]
+    pub x509_svid_key: Bytes,
 
     /// Required. ASN.1 DER encoded X.509 bundle for the trust domain.
-    #[prost(bytes = "vec", tag = "4")]
-    pub bundle: Vec<u8>,
+    #[prost(bytes = "bytes", tag = "4")]
+    pub bundle: Bytes,
 
     /// Optional. An operator-specified string used to provide guidance on how this
     /// identity should be used by a workload when more than one SVID is returned.
@@ -70,14 +68,14 @@ pub struct X509BundlesRequest {}
 #[derive(Clone, PartialEq, Message)]
 pub struct X509BundlesResponse {
     /// Optional. ASN.1 DER encoded certificate revocation lists.
-    #[prost(bytes = "vec", repeated, tag = "1")]
-    pub crl: Vec<Vec<u8>>,
+    #[prost(bytes = "bytes", repeated, tag = "1")]
+    pub crl: Vec<Bytes>,
 
     /// Required. CA certificate bundles belonging to trust domains that the
     /// workload should trust, keyed by the SPIFFE ID of the trust domain.
     /// Bundles are ASN.1 DER encoded.
     #[prost(map = "string, bytes", tag = "2")]
-    pub bundles: HashMap<String, Vec<u8>>,
+    pub bundles: HashMap<String, Bytes>,
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -130,7 +128,7 @@ pub struct JwtBundlesResponse {
     /// Required. JWK encoded JWT bundles, keyed by the SPIFFE ID of the trust
     /// domain.
     #[prost(map = "string, bytes", tag = "1")]
-    pub bundles: HashMap<String, Vec<u8>>,
+    pub bundles: HashMap<String, Bytes>,
 }
 
 /// The ValidateJWTSVIDRequest message conveys request parameters for
