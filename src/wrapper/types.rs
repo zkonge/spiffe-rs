@@ -1,14 +1,15 @@
+use kstring::KString;
 use rustls_pki_types::{CertificateDer, PrivatePkcs8KeyDer};
 use spiffe_id::SpiffeId;
 
-use super::{split_certificates, InvalidSvidError};
-use crate::{Jwtsvid, X509svid};
+use super::{split_certificates, SpiffeError};
+use crate::{JwtSvid as ProtoJwtSvid, X509Svid as ProtoX509Svid};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct JwtSvid {
     spiffe_id: SpiffeId,
     svid: Box<str>,
-    hint: Option<Box<str>>,
+    hint: Option<KString>,
 }
 
 impl JwtSvid {
@@ -28,10 +29,10 @@ impl JwtSvid {
     }
 }
 
-impl TryFrom<Jwtsvid> for JwtSvid {
-    type Error = InvalidSvidError;
+impl TryFrom<ProtoJwtSvid> for JwtSvid {
+    type Error = SpiffeError;
 
-    fn try_from(value: Jwtsvid) -> Result<Self, Self::Error> {
+    fn try_from(value: ProtoJwtSvid) -> Result<Self, Self::Error> {
         Ok(Self {
             spiffe_id: SpiffeId::new(value.spiffe_id)?,
             svid: value.svid.into(),
@@ -52,7 +53,7 @@ pub struct X509Svid {
     svid: Box<[CertificateDer<'static>]>,
     key: OwnedPrivatePkcs8KeyDer,
     bundle: Box<[CertificateDer<'static>]>,
-    hint: Option<Box<str>>,
+    hint: Option<KString>,
 }
 
 impl X509Svid {
@@ -82,12 +83,12 @@ impl X509Svid {
     }
 }
 
-impl TryFrom<X509svid> for X509Svid {
-    type Error = InvalidSvidError;
+impl TryFrom<ProtoX509Svid> for X509Svid {
+    type Error = SpiffeError;
 
-    fn try_from(value: X509svid) -> Result<Self, Self::Error> {
+    fn try_from(value: ProtoX509Svid) -> Result<Self, Self::Error> {
         if value.x509_svid.is_empty() || value.x509_svid_key.is_empty() || value.bundle.is_empty() {
-            return Err(InvalidSvidError::EmptySvid);
+            return Err(SpiffeError::EmptySvid);
         }
 
         Ok(Self {
@@ -95,7 +96,7 @@ impl TryFrom<X509svid> for X509Svid {
             svid: split_certificates(&value.x509_svid)
                 .map(|x| x.map(CertificateDer::into_owned))
                 .collect::<Result<_, _>>()?,
-            key: value.x509_svid_key.into(),
+            key: value.x509_svid_key.to_vec().into(),
             bundle: split_certificates(&value.bundle)
                 .map(|x| x.map(CertificateDer::into_owned))
                 .collect::<Result<_, _>>()?,

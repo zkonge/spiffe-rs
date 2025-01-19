@@ -4,7 +4,7 @@ use spiffe_id::SpiffeIdError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum InvalidSvidError {
+pub enum SpiffeError {
     #[error("invalid SPIFFE ID: {0}")]
     InvalidSpiffeId(#[from] SpiffeIdError),
 

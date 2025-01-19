@@ -7,6 +7,6 @@ mod types;
 
 pub use self::{
     der::{spiffe_id_from_x509_svid, split_certificates, CertificateIter},
-    error::{InvalidDerDataError, InvalidSvidError},
+    error::{InvalidDerDataError, SpiffeError},
     types::{JwtSvid, X509Svid},
 };
