@@ -1,27 +1,27 @@
 use std::{
     convert::Infallible,
-    future::{ready, Future},
+    future::{Future, ready},
     sync::Arc,
     task::{Context, Poll},
 };
 
-use futures_util::{future::BoxFuture, Stream};
+use futures_util::{Stream, future::BoxFuture};
 use http::{HeaderValue, Response as HttpResponse};
 use http_body::Body;
 use prost::Message;
 use tonic::{
-    body::{empty_body, BoxBody},
+    Request, Response, Status,
+    body::{BoxBody, empty_body},
     codec::{CompressionEncoding, EnabledCompressionEncodings, ProstCodec},
     server::{Grpc, NamedService, ServerStreamingService, UnaryService},
-    service::{interceptor::InterceptedService, Interceptor},
-    Request, Response, Status,
+    service::{Interceptor, interceptor::InterceptedService},
 };
 use tower_service::Service;
 
 use super::{
-    JwtBundlesRequest, JwtBundlesResponse, JwtSvidRequest, JwtSvidResponse, ValidateJwtSvidRequest,
-    ValidateJwtSvidResponse, X509BundlesRequest, X509BundlesResponse, X509SvidRequest,
-    X509SvidResponse, SPIFFE_METADATA_KEY, SPIFFE_METADATA_VALUE,
+    JwtBundlesRequest, JwtBundlesResponse, JwtSvidRequest, JwtSvidResponse, SPIFFE_METADATA_KEY,
+    SPIFFE_METADATA_VALUE, ValidateJwtSvidRequest, ValidateJwtSvidResponse, X509BundlesRequest,
+    X509BundlesResponse, X509SvidRequest, X509SvidResponse,
 };
 use crate::StdError;
 

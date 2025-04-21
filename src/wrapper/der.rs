@@ -193,7 +193,7 @@ pub fn spiffe_id_from_x509_svid(cert: &CertificateDer) -> Result<SpiffeId, Spiff
 
 #[cfg(test)]
 mod tests {
-    use const_decoder::{decode, Pem};
+    use const_decoder::{Pem, decode};
 
     use super::*;
 

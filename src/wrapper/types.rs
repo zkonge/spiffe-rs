@@ -2,7 +2,7 @@ use kstring::KString;
 use rustls_pki_types::{CertificateDer, PrivatePkcs8KeyDer};
 use spiffe_id::SpiffeId;
 
-use super::{split_certificates, SpiffeError};
+use super::{SpiffeError, split_certificates};
 use crate::{JwtSvid as ProtoJwtSvid, X509Svid as ProtoX509Svid};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]

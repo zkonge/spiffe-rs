@@ -1,6 +1,6 @@
 use alloc::borrow::Cow;
 
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
 use crate::{SpiffeId, TrustDomain};
 

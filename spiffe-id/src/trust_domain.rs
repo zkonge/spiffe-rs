@@ -4,7 +4,7 @@ use alloc::{
 };
 use core::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-use crate::{validate_trust_domain, SpiffeIdError, SPIFFE_SCHEMA};
+use crate::{SPIFFE_SCHEMA, SpiffeIdError, validate_trust_domain};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 pub struct TrustDomain<'a> {

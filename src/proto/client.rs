@@ -5,17 +5,17 @@ use http::uri::{PathAndQuery, Uri};
 use http_body::Body;
 use prost::bytes::Bytes;
 use tonic::{
+    GrpcMethod, IntoRequest, Request, Response, Status, Streaming,
     body::Body as TonicBody,
     client::{Grpc, GrpcService},
     codec::{CompressionEncoding, ProstCodec},
     metadata::{MetadataKey, MetadataValue},
-    GrpcMethod, IntoRequest, Request, Response, Status, Streaming,
 };
 
 use super::{
-    JwtBundlesRequest, JwtBundlesResponse, JwtSvidRequest, JwtSvidResponse, ValidateJwtSvidRequest,
-    ValidateJwtSvidResponse, X509BundlesRequest, X509BundlesResponse, X509SvidRequest,
-    X509SvidResponse, SPIFFE_METADATA_KEY, SPIFFE_METADATA_VALUE,
+    JwtBundlesRequest, JwtBundlesResponse, JwtSvidRequest, JwtSvidResponse, SPIFFE_METADATA_KEY,
+    SPIFFE_METADATA_VALUE, ValidateJwtSvidRequest, ValidateJwtSvidResponse, X509BundlesRequest,
+    X509BundlesResponse, X509SvidRequest, X509SvidResponse,
 };
 use crate::StdError;
 

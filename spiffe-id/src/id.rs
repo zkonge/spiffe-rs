@@ -5,7 +5,7 @@ use core::{
 };
 
 use crate::{
-    validate_path_charset, validate_trust_domain, SpiffeIdError, TrustDomain, SPIFFE_SCHEMA,
+    SPIFFE_SCHEMA, SpiffeIdError, TrustDomain, validate_path_charset, validate_trust_domain,
 };
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use prost::{bytes::Bytes, Message};
+use prost::{Message, bytes::Bytes};
 use prost_types::Struct;
 
 /// The X509SVIDRequest message conveys parameters for requesting an X.509-SVID.
