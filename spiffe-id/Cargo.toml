@@ -1,11 +1,11 @@
 [package]
 name = "spiffe-id"
 version = "0.0.0"
-edition = "2021"
+edition.workspace = true
 
 [dependencies]
-thiserror = { version = "2.0.11", default-features = false }
-serde = { version = "1.0.217", default-features = false, optional = true }
+thiserror = { workspace = true, default-features = false }
+serde = { workspace = true, default-features = false, optional = true }
 
 [features]
 default = []

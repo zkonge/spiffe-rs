@@ -20,7 +20,7 @@ impl<'de> Deserialize<'de> for SpiffeId {
     {
         let maybe_id: Cow<'_, str> = Deserialize::deserialize(deserializer)?;
 
-        Self::parse(maybe_id).map_err(de::Error::custom)
+        Self::new(maybe_id.into_owned()).map_err(de::Error::custom)
     }
 }
 

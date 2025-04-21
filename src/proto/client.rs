@@ -5,7 +5,7 @@ use http::uri::{PathAndQuery, Uri};
 use http_body::Body;
 use prost::bytes::Bytes;
 use tonic::{
-    body::BoxBody,
+    body::Body as TonicBody,
     client::{Grpc, GrpcService},
     codec::{CompressionEncoding, ProstCodec},
     metadata::{MetadataKey, MetadataValue},
@@ -42,7 +42,7 @@ pub struct SpiffeWorkloadApiClient<T> {
 
 impl<T> SpiffeWorkloadApiClient<T>
 where
-    T: GrpcService<BoxBody>,
+    T: GrpcService<TonicBody>,
     T::Error: Into<StdError>,
     T::ResponseBody: Body<Data = Bytes> + Send + 'static,
     <T::ResponseBody as Body>::Error: Into<StdError> + Send,
@@ -166,7 +166,7 @@ where
 
     /// Validates a JWT-SVID against the requested audience. Returns the SPIFFE
     /// ID of the JWT-SVID and JWT claims.
-    pub async fn validate_jwtsvid(
+    pub async fn validate_jwt_svid(
         &mut self,
         req: impl IntoRequest<ValidateJwtSvidRequest>,
     ) -> Result<Response<ValidateJwtSvidResponse>, Status> {
