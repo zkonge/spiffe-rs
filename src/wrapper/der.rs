@@ -130,7 +130,7 @@ pub fn spiffe_id_from_x509_svid(cert: &CertificateDer) -> Result<SpiffeId, Spiff
 
         match read_der_tlv(rem) {
             Some((_, (0x30, maybe_san))) if maybe_san.starts_with(&SAN_OID_ASN1_BYTES) => {
-                break maybe_san
+                break maybe_san;
             }
             Some((r, (_, _))) => rem = r,
             None => return Err(INVALID_DER),
@@ -140,14 +140,22 @@ pub fn spiffe_id_from_x509_svid(cert: &CertificateDer) -> Result<SpiffeId, Spiff
     let rem = san;
 
     // skip extnID
-    let Some((r, (_, _))) = read_der_tlv(rem) else {
+    let Some((rem, (_, _))) = read_der_tlv(rem) else {
         return Err(INVALID_DER);
     };
+
+    // skip criticality
     // begin to process `extnValue`
-    let rem = r;
+    let extn_value = if let Some((rem_no_crit, (0x01, _))) = read_der_tlv(rem) {
+        // criticality is present and skipped
+        rem_no_crit
+    } else {
+        // criticality is not present
+        rem
+    };
 
     // unpack the `extnValue`
-    let Some((_, (0x04, san_oct_string_value))) = read_der_tlv(rem) else {
+    let Some((_, (0x04, san_oct_string_value))) = read_der_tlv(extn_value) else {
         return Err(INVALID_DER);
     };
 
