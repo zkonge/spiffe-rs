@@ -11,7 +11,7 @@ use http_body::Body;
 use prost::Message;
 use tonic::{
     Request, Response, Status,
-    body::{BoxBody, empty_body},
+    body::Body as TonicBody,
     codec::{CompressionEncoding, EnabledCompressionEncodings, ProstCodec},
     server::{Grpc, NamedService, ServerStreamingService, UnaryService},
     service::{Interceptor, interceptor::InterceptedService},
@@ -162,7 +162,7 @@ where
     B: Body + Send + 'static,
     B::Error: Into<StdError> + Send + 'static,
 {
-    type Response = HttpResponse<BoxBody>;
+    type Response = HttpResponse<TonicBody>;
     type Error = Infallible;
     type Future = BoxResultFuture<Self::Response, Self::Error>;
 
@@ -291,7 +291,7 @@ where
                 Box::pin(async move { Ok(grpc.unary(ValidateJwtSvidService(inner), req).await) })
             }
             _ => Box::pin({
-                let mut response = HttpResponse::new(empty_body());
+                let mut response = HttpResponse::new(TonicBody::empty());
                 let headers = response.headers_mut();
                 headers.insert(
                     Status::GRPC_STATUS,
