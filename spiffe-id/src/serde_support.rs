@@ -1,4 +1,4 @@
-use alloc::borrow::Cow;
+use alloc::{borrow::Cow, boxed::Box};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
@@ -18,9 +18,9 @@ impl<'de> Deserialize<'de> for SpiffeId {
     where
         D: Deserializer<'de>,
     {
-        let maybe_id: Cow<'_, str> = Deserialize::deserialize(deserializer)?;
+        let id: Box<str> = Deserialize::deserialize(deserializer)?;
 
-        Self::new(maybe_id.into_owned()).map_err(de::Error::custom)
+        Self::new(id).map_err(de::Error::custom)
     }
 }
 
@@ -38,8 +38,10 @@ impl<'a, 'de: 'a> Deserialize<'de> for TrustDomain<'a> {
     where
         D: Deserializer<'de>,
     {
-        let maybe_id: Cow<'_, str> = Deserialize::deserialize(deserializer)?;
+        // https://github.com/serde-rs/serde/issues/1852
+        // waiting for Rust specialization so it could be zero-copy
+        let id: Cow<str> = Deserialize::deserialize(deserializer)?;
 
-        maybe_id.try_into().map_err(de::Error::custom)
+        id.try_into().map_err(de::Error::custom)
     }
 }
