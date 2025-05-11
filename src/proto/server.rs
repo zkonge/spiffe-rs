@@ -73,7 +73,7 @@ pub trait SpiffeWorkloadApi: Send + Sync + 'static {
 
     /// Validates a JWT-SVID against the requested audience. Returns the SPIFFE
     /// ID of the JWT-SVID and JWT claims.
-    fn validate_jwtsvid(
+    fn validate_jwt_svid(
         &self,
         req: Request<ValidateJwtSvidRequest>,
     ) -> impl Future<Output = Result<Response<ValidateJwtSvidResponse>, Status>> + Send;
@@ -281,7 +281,7 @@ where
 
                     fn call(&mut self, req: Request<ValidateJwtSvidRequest>) -> Self::Future {
                         let inner = self.0.take().expect("only once");
-                        Box::pin(async move { T::validate_jwtsvid(&inner, req).await })
+                        Box::pin(async move { T::validate_jwt_svid(&inner, req).await })
                     }
                 }
 
