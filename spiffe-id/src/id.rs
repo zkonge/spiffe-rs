@@ -138,6 +138,12 @@ impl From<SpiffeId> for String {
     }
 }
 
+impl AsRef<str> for SpiffeId {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
 impl Debug for SpiffeId {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_struct("SpiffeId")
