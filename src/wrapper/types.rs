@@ -1,4 +1,3 @@
-use kstring::KString;
 use rustls_pki_types::{CertificateDer, PrivatePkcs8KeyDer};
 use spiffe_id::SpiffeId;
 
@@ -9,7 +8,7 @@ use crate::{JwtSvid as ProtoJwtSvid, X509Svid as ProtoX509Svid};
 pub struct JwtSvid {
     spiffe_id: SpiffeId,
     svid: Box<str>,
-    hint: Option<KString>,
+    hint: Option<Box<str>>,
 }
 
 impl JwtSvid {
@@ -26,6 +25,20 @@ impl JwtSvid {
     #[inline]
     pub fn hint(&self) -> Option<&str> {
         self.hint.as_deref()
+    }
+
+    #[cfg(feature = "unchecked-api")]
+    #[inline]
+    pub fn new_unchecked(
+        spiffe_id: SpiffeId,
+        svid: Box<str>,
+        hint: Option<Box<str>>,
+    ) -> Self {
+        Self {
+            spiffe_id,
+            svid,
+            hint,
+        }
     }
 }
 
@@ -53,7 +66,7 @@ pub struct X509Svid {
     svid: Box<[CertificateDer<'static>]>,
     key: OwnedPrivatePkcs8KeyDer,
     bundle: Box<[CertificateDer<'static>]>,
-    hint: Option<KString>,
+    hint: Option<Box<str>>,
 }
 
 impl X509Svid {
@@ -80,6 +93,24 @@ impl X509Svid {
     #[inline]
     pub fn hint(&self) -> Option<&str> {
         self.hint.as_deref()
+    }
+
+    #[cfg(feature = "unchecked-api")]
+    #[inline]
+    pub fn new_unchecked(
+        spiffe_id: SpiffeId,
+        svid: Box<[CertificateDer<'static>]>,
+        key: OwnedPrivatePkcs8KeyDer,
+        bundle: Box<[CertificateDer<'static>]>,
+        hint: Option<Box<str>>,
+    ) -> Self {
+        Self {
+            spiffe_id,
+            svid,
+            key,
+            bundle,
+            hint,
+        }
     }
 }
 

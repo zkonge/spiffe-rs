@@ -35,7 +35,6 @@ rustls-pki-types = { version = "1.11.0", features = [
     "alloc",
 ], default-features = false, optional = true }
 tower-service = { version = "0.3.3", optional = true }
-kstring = { version = "2.0.2", optional = true }
 
 [dev-dependencies]
 const-decoder = "0.4.0"
@@ -48,8 +47,8 @@ wrapper = [
     "dep:rustls-pki-types",
     "dep:spiffe-id",
     "dep:tower-service",
-    "dep:kstring",
 ]
+unchecked-api = []
 grpc = ["dep:tonic", "dep:futures-util", "dep:http", "dep:http-body"]
 client = ["grpc"]
 server = ["grpc"]
