@@ -1,3 +1,23 @@
+//! Represents a SPIFFE ID, which is a standardized identifier for workloads in a SPIFFE-compliant system.
+//!
+//! A SPIFFE ID is composed of a scheme (`spiffe://`), a trust domain, and a path. This struct
+//! encapsulates the full SPIFFE ID as a boxed string slice, and provides methods to access the
+//! trust domain and path components.
+//!
+//! # Examples
+//!
+//! ```
+//! use spiffe_id::{SpiffeId, TrustDomain};
+//!
+//! let id = SpiffeId::new("spiffe://example.org/service").unwrap();
+//! assert_eq!(id.trust_domain(), TrustDomain::const_new("example.org"));
+//! assert_eq!(id.path(), "/service");
+//! ```
+//!
+//! # References
+//!
+//! - [SPIFFE ID Standard](https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE-ID.md)
+
 use alloc::{boxed::Box, string::String};
 use core::{
     fmt::{Debug, Display, Formatter, Result as FmtResult},
@@ -8,6 +28,7 @@ use crate::{
     SPIFFE_SCHEME, SpiffeIdError, TrustDomain, validate_path_charset, validate_trust_domain,
 };
 
+/// A unique identifier for a workload within the SPIFFE ecosystem.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 pub struct SpiffeId {
     id: Box<str>,
@@ -15,6 +36,10 @@ pub struct SpiffeId {
 }
 
 impl SpiffeId {
+    /// Creates a new `SpiffeId` from the given identifier.
+    ///
+    /// It would be zero-copy if the input is already a [`Box<str>`] or could be convert into [`Box<str>`]
+    /// without allocation.
     pub fn new(id: impl Into<Box<str>>) -> Result<Self, SpiffeIdError> {
         // following the SPIFFE ID standard
         // https://github.com/spiffe/spiffe/blob/67dc2b7d3f34f865be6d8bff20a7d6c6d29a4065/standards/SPIFFE-ID.md
@@ -69,6 +94,7 @@ impl SpiffeId {
         })
     }
 
+    /// Returns the trust domain component of the SPIFFE ID.
     #[inline]
     pub const fn trust_domain(&self) -> TrustDomain<'_> {
         let (leading, _path) = self.id.split_at(self.path_offset as usize);
@@ -77,6 +103,7 @@ impl SpiffeId {
         TrustDomain::new_unchecked(trust_domain)
     }
 
+    /// Returns the path component of the SPIFFE ID.
     #[inline]
     pub const fn path(&self) -> &str {
         let (_, path) = self.id.split_at(self.path_offset as usize);
@@ -84,6 +111,7 @@ impl SpiffeId {
         path
     }
 
+    /// Returns the full SPIFFE ID as a string slice.
     #[inline]
     pub const fn as_str(&self) -> &str {
         &self.id
