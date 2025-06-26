@@ -77,7 +77,7 @@ where
     }
 
     /// Limits the maximum size of an encoded message.
-    /// Default: `usize::MAX`
+    /// Default: [`usize::MAX`]
     #[must_use]
     pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
         self.inner = self.inner.max_encoding_message_size(limit);
