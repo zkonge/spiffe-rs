@@ -7,7 +7,7 @@ use super::{InvalidDerDataError, SpiffeError};
 
 type Tlv<'a> = (u8, &'a [u8]);
 
-const fn read_der_tlv(der: &[u8]) -> Option<(&[u8], Tlv)> {
+const fn read_der_tlv(der: &[u8]) -> Option<(&[u8], Tlv<'_>)> {
     let [tag, first_len_byte, rem @ ..] = der else {
         return None;
     };
