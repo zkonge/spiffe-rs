@@ -2,8 +2,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum SpiffeIdError {
-    #[error("invalid URL schema")]
-    InvalidSchema,
+    #[error("invalid URL scheme")]
+    InvalidScheme,
 
     #[error("invalid SPIFFE ID character")]
     InvalidSpiffeIdCharacter,

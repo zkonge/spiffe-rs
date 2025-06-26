@@ -9,7 +9,18 @@ mod trust_domain;
 
 pub use crate::{error::SpiffeIdError, id::SpiffeId, trust_domain::TrustDomain};
 
-const SPIFFE_SCHEMA: &str = "spiffe://";
+const SPIFFE_SCHEME: &str = "spiffe://";
+
+macro_rules! tri {
+    ($e:expr) => {
+        match $e {
+            Ok(v) => v,
+            Err(e) => return Err(e),
+        }
+    };
+}
+
+pub(crate) use tri;
 
 #[inline]
 const fn validate_trust_domain_charset(c: u8) -> bool {

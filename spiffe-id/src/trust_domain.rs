@@ -1,10 +1,7 @@
-use alloc::{
-    borrow::{Cow, ToOwned},
-    string::String,
-};
+use alloc::{borrow::Cow, string::String};
 use core::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-use crate::{SPIFFE_SCHEMA, SpiffeIdError, validate_trust_domain};
+use crate::{SPIFFE_SCHEME, SpiffeIdError, tri, validate_trust_domain};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 pub struct TrustDomain<'a> {
@@ -13,18 +10,63 @@ pub struct TrustDomain<'a> {
 
 impl<'a> TrustDomain<'a> {
     pub fn new(td: &'a str) -> Result<Self, SpiffeIdError> {
-        let td = td.strip_prefix(SPIFFE_SCHEMA).unwrap_or(td);
+        let td = td.strip_prefix(SPIFFE_SCHEME).unwrap_or(td);
 
-        validate_trust_domain(td.as_bytes())?;
+        tri!(validate_trust_domain(td.as_bytes()));
 
         Ok(Self {
             td: Cow::Borrowed(td),
         })
     }
 
-    pub fn borrow(&'a self) -> Self {
+    #[track_caller]
+    pub const fn const_new(td: &'static str) -> Self {
+        const fn str_equal(a: &'static str, b: &'static str) -> bool {
+            let a_bytes = a.as_bytes();
+            let b_bytes = b.as_bytes();
+
+            if a_bytes.len() != b_bytes.len() {
+                return false;
+            }
+
+            let mut i = 0;
+            while i < a_bytes.len() {
+                if a_bytes[i] != b_bytes[i] {
+                    return false;
+                }
+                i += 1;
+            }
+
+            true
+        }
+
+        // strip the prefix if it exists in const context
+        let td = match td.split_at_checked(SPIFFE_SCHEME.len()) {
+            Some((maybe_scheme, rem)) => {
+                if str_equal(maybe_scheme, SPIFFE_SCHEME) {
+                    rem
+                } else {
+                    td
+                }
+            }
+            None => td,
+        };
+
+        if validate_trust_domain(td.as_bytes()).is_err() {
+            panic!("Invalid trust domain");
+        }
+
         TrustDomain {
-            td: Cow::Borrowed(&self.td),
+            td: Cow::Borrowed(td),
+        }
+    }
+
+    pub const fn borrow(&'a self) -> Self {
+        TrustDomain {
+            td: Cow::Borrowed(match &self.td {
+                Cow::Borrowed(x) => x,
+                Cow::Owned(x) => x.as_str(),
+            }),
         }
     }
 
@@ -34,8 +76,11 @@ impl<'a> TrustDomain<'a> {
         }
     }
 
-    pub fn as_str(&self) -> &str {
-        &self.td
+    pub const fn as_str(&self) -> &str {
+        match &self.td {
+            Cow::Borrowed(td) => td,
+            Cow::Owned(td) => td.as_str(),
+        }
     }
 
     pub(crate) const fn new_unchecked(td: &'a str) -> Self {
@@ -57,12 +102,11 @@ impl TryFrom<String> for TrustDomain<'static> {
     type Error = SpiffeIdError;
 
     fn try_from(td: String) -> Result<Self, Self::Error> {
-        let td = td
-            .strip_prefix(SPIFFE_SCHEMA)
-            .map(ToOwned::to_owned)
-            .unwrap_or(td);
-
-        validate_trust_domain(td.as_bytes())?;
+        // Delegate validation to the `TrustDomain::new` method.
+        //
+        // Here we can't use [`Self::new`] because [`Self`] is [`TrustDomain<'static>`],
+        // and it requires a static lifetime reference, but "&td" only has a temporary one.
+        TrustDomain::new(&td)?;
 
         Ok(TrustDomain { td: Cow::Owned(td) })
     }

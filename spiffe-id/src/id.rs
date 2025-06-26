@@ -5,7 +5,7 @@ use core::{
 };
 
 use crate::{
-    SPIFFE_SCHEMA, SpiffeIdError, TrustDomain, validate_path_charset, validate_trust_domain,
+    SPIFFE_SCHEME, SpiffeIdError, TrustDomain, validate_path_charset, validate_trust_domain,
 };
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
@@ -26,8 +26,8 @@ impl SpiffeId {
         }
 
         // 2. SPIFFE Identity
-        let Some((SPIFFE_SCHEMA, sid)) = id.split_at_checked(SPIFFE_SCHEMA.len()) else {
-            return Err(SpiffeIdError::InvalidSchema);
+        let Some((SPIFFE_SCHEME, sid)) = id.split_at_checked(SPIFFE_SCHEME.len()) else {
+            return Err(SpiffeIdError::InvalidScheme);
         };
 
         // ASCII char would be ensured by the following check
@@ -61,7 +61,7 @@ impl SpiffeId {
             }
         }
 
-        let path_offset = td.len() + SPIFFE_SCHEMA.len();
+        let path_offset = td.len() + SPIFFE_SCHEME.len();
 
         Ok(Self {
             id,
@@ -70,13 +70,18 @@ impl SpiffeId {
     }
 
     #[inline]
-    pub fn trust_domain(&self) -> TrustDomain<'_> {
-        TrustDomain::new_unchecked(&self.id[SPIFFE_SCHEMA.len()..self.path_offset as usize])
+    pub const fn trust_domain(&self) -> TrustDomain<'_> {
+        let (leading, _path) = self.id.split_at(self.path_offset as usize);
+        let (_scheme, trust_domain) = leading.split_at(SPIFFE_SCHEME.len());
+
+        TrustDomain::new_unchecked(trust_domain)
     }
 
     #[inline]
-    pub fn path(&self) -> &str {
-        &self.id[self.path_offset as usize..]
+    pub const fn path(&self) -> &str {
+        let (_, path) = self.id.split_at(self.path_offset as usize);
+
+        path
     }
 
     #[inline]
