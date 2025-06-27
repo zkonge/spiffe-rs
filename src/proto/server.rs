@@ -13,7 +13,7 @@ use tonic::{
     Request, Response, Status,
     body::Body as TonicBody,
     codec::{CompressionEncoding, EnabledCompressionEncodings, ProstCodec},
-    server::{Grpc, NamedService, ServerStreamingService, UnaryService},
+    server::{Grpc, NamedService},
     service::{Interceptor, interceptor::InterceptedService},
 };
 use tower_service::Service;
@@ -182,115 +182,55 @@ where
             return Box::pin(ready(Ok(resp)));
         }
 
+        let mut inner = Some(self.inner.clone());
+
         match req.uri().path().strip_prefix("/SpiffeWorkloadAPI/") {
             Some("FetchX509SVID") => {
-                struct FetchX509SvidService<T: SpiffeWorkloadApi>(pub Option<Arc<T>>);
-
-                impl<T: SpiffeWorkloadApi> ServerStreamingService<X509SvidRequest> for FetchX509SvidService<T> {
-                    type Response = X509SvidResponse;
-                    type ResponseStream = T::FetchX509SvidStream;
-                    type Future = BoxResultFuture<Response<Self::ResponseStream>, Status>;
-
-                    fn call(&mut self, req: Request<X509SvidRequest>) -> Self::Future {
-                        let inner = self.0.take().expect("only once");
-                        Box::pin(async move { T::fetch_x509_svid(&inner, req).await })
-                    }
-                }
-
-                let inner = Some(self.inner.clone());
                 let mut grpc = self.make_grpc();
+                let svc = SvcFn(move |req: Request<X509SvidRequest>| {
+                    let inner = inner.take().expect("only once");
+                    async move { T::fetch_x509_svid(&inner, req).await }
+                });
 
-                Box::pin(async move {
-                    Ok(grpc
-                        .server_streaming(FetchX509SvidService(inner), req)
-                        .await)
-                })
+                Box::pin(async move { Ok(grpc.server_streaming(svc, req).await) })
             }
             Some("FetchX509Bundles") => {
-                struct FetchX509BundlesService<T: SpiffeWorkloadApi>(pub Option<Arc<T>>);
-
-                impl<T: SpiffeWorkloadApi> ServerStreamingService<X509BundlesRequest>
-                    for FetchX509BundlesService<T>
-                {
-                    type Response = X509BundlesResponse;
-                    type ResponseStream = T::FetchX509BundlesStream;
-                    type Future = BoxResultFuture<Response<Self::ResponseStream>, Status>;
-
-                    fn call(&mut self, req: Request<X509BundlesRequest>) -> Self::Future {
-                        let inner = self.0.take().expect("only once");
-                        Box::pin(async move { T::fetch_x509_bundles(&inner, req).await })
-                    }
-                }
-
-                let inner = Some(self.inner.clone());
                 let mut grpc = self.make_grpc();
+                let svc = SvcFn(move |req: Request<X509BundlesRequest>| {
+                    let inner = inner.take().expect("only once");
+                    async move { T::fetch_x509_bundles(&inner, req).await }
+                });
 
-                Box::pin(async move {
-                    Ok(grpc
-                        .server_streaming(FetchX509BundlesService(inner), req)
-                        .await)
-                })
+                Box::pin(async move { Ok(grpc.server_streaming(svc, req).await) })
             }
             Some("FetchJWTSVID") => {
-                struct FetchJwtSvidService<T: SpiffeWorkloadApi>(pub Option<Arc<T>>);
-
-                impl<T: SpiffeWorkloadApi> UnaryService<JwtSvidRequest> for FetchJwtSvidService<T> {
-                    type Response = JwtSvidResponse;
-                    type Future = BoxResultFuture<Response<Self::Response>, Status>;
-
-                    fn call(&mut self, req: Request<JwtSvidRequest>) -> Self::Future {
-                        let inner = self.0.take().expect("only once");
-                        Box::pin(async move { T::fetch_jwt_svid(&inner, req).await })
-                    }
-                }
-
-                let inner = Some(self.inner.clone());
                 let mut grpc = self.make_grpc();
+                let svc = SvcFn(move |req: Request<JwtSvidRequest>| {
+                    let inner = inner.take().expect("only once");
+                    async move { T::fetch_jwt_svid(&inner, req).await }
+                });
 
-                Box::pin(async move { Ok(grpc.unary(FetchJwtSvidService(inner), req).await) })
+                Box::pin(async move { Ok(grpc.unary(svc, req).await) })
             }
             Some("FetchJWTBundles") => {
-                struct FetchJwtBundlesService<T: SpiffeWorkloadApi>(pub Option<Arc<T>>);
-
-                impl<T: SpiffeWorkloadApi> ServerStreamingService<JwtBundlesRequest> for FetchJwtBundlesService<T> {
-                    type Response = JwtBundlesResponse;
-                    type ResponseStream = T::FetchJwtBundlesStream;
-                    type Future = BoxResultFuture<Response<Self::ResponseStream>, Status>;
-
-                    fn call(&mut self, req: Request<JwtBundlesRequest>) -> Self::Future {
-                        let inner = self.0.take().expect("only once");
-                        Box::pin(async move { T::fetch_jwt_bundles(&inner, req).await })
-                    }
-                }
-
-                let inner = Some(self.inner.clone());
                 let mut grpc = self.make_grpc();
+                let svc = SvcFn(move |req: Request<JwtBundlesRequest>| {
+                    let inner = inner.take().expect("only once");
+                    async move { T::fetch_jwt_bundles(&inner, req).await }
+                });
 
-                Box::pin(async move {
-                    Ok(grpc
-                        .server_streaming(FetchJwtBundlesService(inner), req)
-                        .await)
-                })
+                Box::pin(async move { Ok(grpc.server_streaming(svc, req).await) })
             }
             Some("ValidateJWTSVID") => {
-                struct ValidateJwtSvidService<T: SpiffeWorkloadApi>(pub Option<Arc<T>>);
-
-                impl<T: SpiffeWorkloadApi> UnaryService<ValidateJwtSvidRequest> for ValidateJwtSvidService<T> {
-                    type Response = ValidateJwtSvidResponse;
-                    type Future = BoxResultFuture<Response<Self::Response>, Status>;
-
-                    fn call(&mut self, req: Request<ValidateJwtSvidRequest>) -> Self::Future {
-                        let inner = self.0.take().expect("only once");
-                        Box::pin(async move { T::validate_jwt_svid(&inner, req).await })
-                    }
-                }
-
-                let inner = Some(self.inner.clone());
                 let mut grpc = self.make_grpc();
+                let svc = SvcFn(move |req: Request<ValidateJwtSvidRequest>| {
+                    let inner = inner.take().expect("only once");
+                    async move { T::validate_jwt_svid(&inner, req).await }
+                });
 
-                Box::pin(async move { Ok(grpc.unary(ValidateJwtSvidService(inner), req).await) })
+                Box::pin(async move { Ok(grpc.unary(svc, req).await) })
             }
-            _ => Box::pin({
+            _ => {
                 let mut response = HttpResponse::new(TonicBody::empty());
                 let headers = response.headers_mut();
                 headers.insert(
@@ -301,8 +241,9 @@ where
                     http::header::CONTENT_TYPE,
                     tonic::metadata::GRPC_CONTENT_TYPE,
                 );
-                ready(Ok(response))
-            }),
+
+                Box::pin(ready(Ok(response)))
+            }
         }
     }
 }
@@ -321,4 +262,24 @@ impl<T> Clone for SpiffeWorkloadApiServer<T> {
 
 impl<T> NamedService for SpiffeWorkloadApiServer<T> {
     const NAME: &'static str = "SpiffeWorkloadAPI";
+}
+
+pub struct SvcFn<F>(F);
+
+impl<F, Fut, ReqTy, RespTy> Service<Request<ReqTy>> for SvcFn<F>
+where
+    F: FnMut(Request<ReqTy>) -> Fut,
+    Fut: Future<Output = Result<RespTy, Status>>,
+{
+    type Response = RespTy;
+    type Error = Status;
+    type Future = Fut;
+
+    fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), Status>> {
+        Ok(()).into()
+    }
+
+    fn call(&mut self, req: Request<ReqTy>) -> Self::Future {
+        (self.0)(req)
+    }
 }
