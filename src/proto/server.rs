@@ -1,11 +1,11 @@
 use std::{
     convert::Infallible,
-    future::{Future, ready},
+    future::Future,
     sync::Arc,
     task::{Context, Poll},
 };
 
-use futures_util::{Stream, future::BoxFuture};
+use futures_util::Stream;
 use http::{HeaderValue, Response as HttpResponse};
 use http_body::Body;
 use prost::Message;
@@ -24,8 +24,6 @@ use super::{
     X509BundlesResponse, X509SvidRequest, X509SvidResponse,
 };
 use crate::StdError;
-
-type BoxResultFuture<T, E> = BoxFuture<'static, Result<T, E>>;
 
 pub trait SpiffeWorkloadApi: Send + Sync + 'static {
     /// Server streaming response type for the FetchX509SVID method.
@@ -88,7 +86,7 @@ pub struct SpiffeWorkloadApiServer<T> {
     max_encoding_message_size: Option<usize>,
 }
 
-impl<T> SpiffeWorkloadApiServer<T> {
+impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
     pub fn from_arc(inner: Arc<T>) -> Self {
         Self {
             inner,
@@ -154,97 +152,106 @@ impl<T> SpiffeWorkloadApiServer<T> {
                 self.max_encoding_message_size,
             )
     }
-}
 
-impl<T, B> Service<http::Request<B>> for SpiffeWorkloadApiServer<T>
-where
-    T: SpiffeWorkloadApi,
-    B: Body + Send + 'static,
-    B::Error: Into<StdError> + Send + 'static,
-{
-    type Response = HttpResponse<TonicBody>;
-    type Error = Infallible;
-    type Future = BoxResultFuture<Self::Response, Self::Error>;
+    pub fn into_service<B>(
+        self,
+    ) -> impl Service<http::Request<B>, Response = HttpResponse<TonicBody>>
+    where
+        B: Body + Send + 'static,
+        B::Error: Into<StdError> + Send + 'static,
+    {
+        SvcFn(move |req: http::Request<B>| {
+            let server_impl = self.clone();
+            async move {
+                if req
+                    .headers()
+                    .get(SPIFFE_METADATA_KEY)
+                    .map(HeaderValue::as_bytes)
+                    != Some(SPIFFE_METADATA_VALUE.as_bytes())
+                {
+                    let resp = Status::invalid_argument("security header missing from request")
+                        .into_http();
 
-    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
-    }
+                    return Ok::<_, Infallible>(resp);
+                }
 
-    fn call(&mut self, req: http::Request<B>) -> Self::Future {
-        if req
-            .headers()
-            .get(SPIFFE_METADATA_KEY)
-            .map(HeaderValue::as_bytes)
-            != Some(SPIFFE_METADATA_VALUE.as_bytes())
-        {
-            let resp = Status::invalid_argument("security header missing from request").into_http();
+                let mut inner = Some(server_impl.inner.clone());
 
-            return Box::pin(ready(Ok(resp)));
-        }
+                enum Dispatcher<T1, T2, T3, T4, T5> {
+                    FetchX509Svid(SvcFn<T1>),
+                    FetchX509Bundles(SvcFn<T2>),
+                    FetchJwtSvid(SvcFn<T3>),
+                    FetchJwtBundles(SvcFn<T4>),
+                    ValidateJwtSvid(SvcFn<T5>),
+                    Unimplemented,
+                }
 
-        let mut inner = Some(self.inner.clone());
+                let svc = match req.uri().path().strip_prefix("/SpiffeWorkloadAPI/") {
+                    Some("FetchX509SVID") => {
+                        Dispatcher::FetchX509Svid(SvcFn(move |req: Request<X509SvidRequest>| {
+                            let inner = inner.take().expect("only once");
+                            async move { T::fetch_x509_svid(&inner, req).await }
+                        }))
+                    }
+                    Some("FetchX509Bundles") => Dispatcher::FetchX509Bundles(SvcFn(
+                        move |req: Request<X509BundlesRequest>| {
+                            let inner = inner.take().expect("only once");
+                            async move { T::fetch_x509_bundles(&inner, req).await }
+                        },
+                    )),
+                    Some("FetchJWTSVID") => {
+                        Dispatcher::FetchJwtSvid(SvcFn(move |req: Request<JwtSvidRequest>| {
+                            let inner = inner.take().expect("only once");
+                            async move { T::fetch_jwt_svid(&inner, req).await }
+                        }))
+                    }
+                    Some("FetchJWTBundles") => Dispatcher::FetchJwtBundles(SvcFn(
+                        move |req: Request<JwtBundlesRequest>| {
+                            let inner = inner.take().expect("only once");
+                            async move { T::fetch_jwt_bundles(&inner, req).await }
+                        },
+                    )),
+                    Some("ValidateJWTSVID") => Dispatcher::ValidateJwtSvid(SvcFn(
+                        move |req: Request<ValidateJwtSvidRequest>| {
+                            let inner = inner.take().expect("only once");
+                            async move { T::validate_jwt_svid(&inner, req).await }
+                        },
+                    )),
+                    _ => Dispatcher::Unimplemented,
+                };
 
-        match req.uri().path().strip_prefix("/SpiffeWorkloadAPI/") {
-            Some("FetchX509SVID") => {
-                let mut grpc = self.make_grpc();
-                let svc = SvcFn(move |req: Request<X509SvidRequest>| {
-                    let inner = inner.take().expect("only once");
-                    async move { T::fetch_x509_svid(&inner, req).await }
-                });
+                let resp = match svc {
+                    Dispatcher::FetchX509Svid(svc) => {
+                        server_impl.make_grpc().server_streaming(svc, req).await
+                    }
+                    Dispatcher::FetchX509Bundles(svc) => {
+                        server_impl.make_grpc().server_streaming(svc, req).await
+                    }
+                    Dispatcher::FetchJwtSvid(svc) => server_impl.make_grpc().unary(svc, req).await,
+                    Dispatcher::FetchJwtBundles(svc) => {
+                        server_impl.make_grpc().server_streaming(svc, req).await
+                    }
+                    Dispatcher::ValidateJwtSvid(svc) => {
+                        server_impl.make_grpc().unary(svc, req).await
+                    }
+                    Dispatcher::Unimplemented => {
+                        let mut response = HttpResponse::new(TonicBody::empty());
+                        let headers = response.headers_mut();
+                        headers.insert(
+                            Status::GRPC_STATUS,
+                            (tonic::Code::Unimplemented as i32).into(),
+                        );
+                        headers.insert(
+                            http::header::CONTENT_TYPE,
+                            tonic::metadata::GRPC_CONTENT_TYPE,
+                        );
+                        response
+                    }
+                };
 
-                Box::pin(async move { Ok(grpc.server_streaming(svc, req).await) })
+                Ok(resp)
             }
-            Some("FetchX509Bundles") => {
-                let mut grpc = self.make_grpc();
-                let svc = SvcFn(move |req: Request<X509BundlesRequest>| {
-                    let inner = inner.take().expect("only once");
-                    async move { T::fetch_x509_bundles(&inner, req).await }
-                });
-
-                Box::pin(async move { Ok(grpc.server_streaming(svc, req).await) })
-            }
-            Some("FetchJWTSVID") => {
-                let mut grpc = self.make_grpc();
-                let svc = SvcFn(move |req: Request<JwtSvidRequest>| {
-                    let inner = inner.take().expect("only once");
-                    async move { T::fetch_jwt_svid(&inner, req).await }
-                });
-
-                Box::pin(async move { Ok(grpc.unary(svc, req).await) })
-            }
-            Some("FetchJWTBundles") => {
-                let mut grpc = self.make_grpc();
-                let svc = SvcFn(move |req: Request<JwtBundlesRequest>| {
-                    let inner = inner.take().expect("only once");
-                    async move { T::fetch_jwt_bundles(&inner, req).await }
-                });
-
-                Box::pin(async move { Ok(grpc.server_streaming(svc, req).await) })
-            }
-            Some("ValidateJWTSVID") => {
-                let mut grpc = self.make_grpc();
-                let svc = SvcFn(move |req: Request<ValidateJwtSvidRequest>| {
-                    let inner = inner.take().expect("only once");
-                    async move { T::validate_jwt_svid(&inner, req).await }
-                });
-
-                Box::pin(async move { Ok(grpc.unary(svc, req).await) })
-            }
-            _ => {
-                let mut response = HttpResponse::new(TonicBody::empty());
-                let headers = response.headers_mut();
-                headers.insert(
-                    Status::GRPC_STATUS,
-                    (tonic::Code::Unimplemented as i32).into(),
-                );
-                headers.insert(
-                    http::header::CONTENT_TYPE,
-                    tonic::metadata::GRPC_CONTENT_TYPE,
-                );
-
-                Box::pin(ready(Ok(response)))
-            }
-        }
+        })
     }
 }
 
@@ -266,20 +273,20 @@ impl<T> NamedService for SpiffeWorkloadApiServer<T> {
 
 pub struct SvcFn<F>(F);
 
-impl<F, Fut, ReqTy, RespTy> Service<Request<ReqTy>> for SvcFn<F>
+impl<F, Fut, ReqTy, RespTy, E> Service<ReqTy> for SvcFn<F>
 where
-    F: FnMut(Request<ReqTy>) -> Fut,
-    Fut: Future<Output = Result<RespTy, Status>>,
+    F: FnMut(ReqTy) -> Fut,
+    Fut: Future<Output = Result<RespTy, E>>,
 {
     type Response = RespTy;
-    type Error = Status;
+    type Error = E;
     type Future = Fut;
 
-    fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), Status>> {
-        Ok(()).into()
+    fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), E>> {
+        Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: Request<ReqTy>) -> Self::Future {
+    fn call(&mut self, req: ReqTy) -> Self::Future {
         (self.0)(req)
     }
 }
