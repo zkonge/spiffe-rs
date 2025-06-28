@@ -1,11 +1,17 @@
+extern crate alloc;
+
+use std::fmt::{Debug, Formatter, Result as FmtResult};
+
+use alloc::{boxed::Box, string::String, vec::Vec};
+
 use prost::bytes::Bytes;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use spiffe_id::SpiffeId;
 
 use super::{InvalidDerDataError, SpiffeError, split_certificates};
-use crate::{JwtSvid as ProtoJwtSvid, X509Svid as ProtoX509Svid};
+use crate::proto::{JwtSvid as ProtoJwtSvid, X509Svid as ProtoX509Svid};
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct JwtSvid {
     spiffe_id: SpiffeId,
     svid: Box<str>,
@@ -41,6 +47,16 @@ impl JwtSvid {
             svid,
             hint,
         }
+    }
+}
+
+impl Debug for JwtSvid {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("JwtSvid")
+            .field("spiffe_id", &self.spiffe_id)
+            .field("svid", &"[secret elided]")
+            .field("hint", &self.hint)
+            .finish()
     }
 }
 
@@ -105,19 +121,11 @@ impl TryFrom<Bytes> for X509Bundle {
     }
 }
 
-impl From<X509Bundle> for Vec<CertificateDer<'static>> {
-    fn from(bundle: X509Bundle) -> Self {
-        bundle.bundle.into()
-    }
-}
-
-type OwnedPrivatePkcs8KeyDer = Box<[u8]>;
-
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct X509Svid {
     spiffe_id: SpiffeId,
     svid: Box<[CertificateDer<'static>]>,
-    key: OwnedPrivatePkcs8KeyDer,
+    key: PrivatePkcs8KeyDer<'static>,
     bundle: X509Bundle,
     hint: Option<Box<str>>,
 }
@@ -135,7 +143,7 @@ impl X509Svid {
 
     #[inline]
     pub fn key(&self) -> PrivateKeyDer<'_> {
-        PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(self.key.as_ref()))
+        PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(self.key.secret_pkcs8_der()))
     }
 
     #[inline]
@@ -156,9 +164,12 @@ impl X509Svid {
         PrivateKeyDer<'static>,
         X509Bundle,
     ) {
-        let key = PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(Vec::from(self.key)));
-
-        (self.spiffe_id, self.svid.into(), key, self.bundle)
+        (
+            self.spiffe_id,
+            self.svid.into(),
+            PrivateKeyDer::Pkcs8(self.key),
+            self.bundle,
+        )
     }
 
     #[cfg(feature = "unchecked-api")]
@@ -176,6 +187,18 @@ impl X509Svid {
             key,
             bundle,
             hint,
+        }
+    }
+}
+
+impl Clone for X509Svid {
+    fn clone(&self) -> Self {
+        Self {
+            spiffe_id: self.spiffe_id.clone(),
+            svid: self.svid.clone(),
+            key: self.key.clone_key(),
+            bundle: self.bundle.clone(),
+            hint: self.hint.clone(),
         }
     }
 }

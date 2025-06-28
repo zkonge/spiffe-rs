@@ -41,17 +41,27 @@ const-decoder = "0.4.0"
 
 [features]
 default = ["wrapper", "client"]
-# expose useful type wrapper for SPIFFE workload
-wrapper = [
-    "dep:thiserror",
-    "dep:rustls-pki-types",
-    "dep:spiffe-id",
+
+# high-level wrapper around the low-level workload APIs
+wrapper = ["dep:thiserror", "dep:rustls-pki-types", "dep:spiffe-id"]
+
+# allow to create high-level types without checking the validation
+unchecked-api = []
+
+# low-level APIs, exposed as `spiffe::proto`, if you want to implement your own workload API
+low-level = []
+
+# client abstraction, without this, only basic types are available
+client = ["_grpc"]
+server = ["_grpc"]
+
+_grpc = [
+    "dep:tonic",
+    "dep:futures-util",
+    "dep:http",
+    "dep:http-body",
     "dep:tower-service",
 ]
-unchecked-api = []
-grpc = ["dep:tonic", "dep:futures-util", "dep:http", "dep:http-body"]
-client = ["grpc"]
-server = ["grpc"]
 
 [profile.release]
 opt-level = "s"

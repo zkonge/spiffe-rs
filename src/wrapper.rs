@@ -1,6 +1,7 @@
 //! This module contains the high-level wrapper for the SPIFFE Workload API types
 //! and useful functions to work with them.
 
+#[cfg(feature = "client")]
 pub mod client;
 mod der;
 mod error;
