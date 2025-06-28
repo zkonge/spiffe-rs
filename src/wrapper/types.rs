@@ -177,8 +177,8 @@ impl X509Svid {
     pub fn new_unchecked(
         spiffe_id: SpiffeId,
         svid: Box<[CertificateDer<'static>]>,
-        key: OwnedPrivatePkcs8KeyDer,
-        bundle: Box<[CertificateDer<'static>]>,
+        key: PrivatePkcs8KeyDer<'static>,
+        bundle: X509Bundle,
         hint: Option<Box<str>>,
     ) -> Self {
         Self {
