@@ -49,6 +49,7 @@ fn split_cert(raw: &[u8]) -> Option<(&[u8], CertificateDer<'_>)> {
     Some((rem, CertificateDer::from_slice(cert)))
 }
 
+#[derive(Clone, Debug)]
 pub struct CertificateIter<'a> {
     der: &'a [u8],
 }
@@ -66,11 +67,24 @@ impl<'a> Iterator for CertificateIter<'a> {
             None => ([].as_slice(), Err(InvalidDerDataError)),
         };
         self.der = rem;
+
         Some(cert)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (if self.der.is_empty() { 0 } else { 3 }, None)
+        let mut count = 0;
+        let mut rem = self.der;
+
+        while !rem.is_empty() {
+            if let Some((r, _)) = split_cert(rem) {
+                count += 1;
+                rem = r;
+            } else {
+                break;
+            }
+        }
+
+        (count, Some(count))
     }
 }
 
