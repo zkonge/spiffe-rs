@@ -29,11 +29,7 @@ impl JwtSvid {
 
     #[cfg(feature = "unchecked-api")]
     #[inline]
-    pub fn new_unchecked(
-        spiffe_id: SpiffeId,
-        svid: Box<str>,
-        hint: Option<Box<str>>,
-    ) -> Self {
+    pub fn new_unchecked(spiffe_id: SpiffeId, svid: Box<str>, hint: Option<Box<str>>) -> Self {
         Self {
             spiffe_id,
             svid,

@@ -27,7 +27,7 @@ use crate::StdError;
 
 pub trait SpiffeWorkloadApi: Send + Sync + 'static {
     /// Server streaming response type for the FetchX509SVID method.
-    type FetchX509SvidStream: Stream<Item = Result<X509SvidResponse, Status>> + Send + 'static;
+    type FetchX509SvidStream: Stream<Item = Result<X509SvidResponse, Status>> + Send;
 
     /// Fetch X.509-SVIDs for all SPIFFE identities the workload is entitled to,
     /// as well as related information like trust bundles and CRLs. As this
@@ -39,7 +39,7 @@ pub trait SpiffeWorkloadApi: Send + Sync + 'static {
     ) -> impl Future<Output = Result<Response<Self::FetchX509SvidStream>, Status>> + Send;
 
     /// Server streaming response type for the FetchX509Bundles method.
-    type FetchX509BundlesStream: Stream<Item = Result<X509BundlesResponse, Status>> + Send + 'static;
+    type FetchX509BundlesStream: Stream<Item = Result<X509BundlesResponse, Status>> + Send;
 
     /// Fetch trust bundles and CRLs. Useful for clients that only need to
     /// validate SVIDs without obtaining an SVID for themself. As this
@@ -59,7 +59,7 @@ pub trait SpiffeWorkloadApi: Send + Sync + 'static {
     ) -> impl Future<Output = Result<Response<JwtSvidResponse>, Status>> + Send;
 
     /// Server streaming response type for the FetchJWTBundles method.
-    type FetchJwtBundlesStream: Stream<Item = Result<JwtBundlesResponse, Status>> + Send + 'static;
+    type FetchJwtBundlesStream: Stream<Item = Result<JwtBundlesResponse, Status>> + Send;
 
     /// Fetches the JWT bundles, formatted as JWKS documents, keyed by the
     /// SPIFFE ID of the trust domain. As this information changes, subsequent
@@ -137,6 +137,7 @@ impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
     }
 
     #[inline]
+    #[must_use]
     fn make_grpc<U, V>(&self) -> Grpc<ProstCodec<U, V>>
     where
         U: Message + 'static,
@@ -153,15 +154,21 @@ impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
             )
     }
 
+    #[must_use]
     pub fn into_service<B>(
         self,
-    ) -> impl Service<http::Request<B>, Response = HttpResponse<TonicBody>>
+    ) -> impl Service<
+        http::Request<B>,
+        Response = HttpResponse<TonicBody>,
+        Error = Infallible,
+        Future = impl Future<Output = Result<HttpResponse<TonicBody>, Infallible>> + Send,
+    > + Clone
     where
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
         SvcFn(move |req: http::Request<B>| {
-            let server_impl = self.clone();
+            let server = self.clone();
             async move {
                 if req
                     .headers()
@@ -175,66 +182,49 @@ impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
                     return Ok::<_, Infallible>(resp);
                 }
 
-                let mut inner = Some(server_impl.inner.clone());
+                let inner = &*server.inner;
 
-                enum Dispatcher<T1, T2, T3, T4, T5> {
-                    FetchX509Svid(SvcFn<T1>),
-                    FetchX509Bundles(SvcFn<T2>),
-                    FetchJwtSvid(SvcFn<T3>),
-                    FetchJwtBundles(SvcFn<T4>),
-                    ValidateJwtSvid(SvcFn<T5>),
+                enum Dispatch<T0, T1, T2, T3, T4> {
+                    FetchX509Svid(SvcFn<T0>),
+                    FetchX509Bundles(SvcFn<T1>),
+                    FetchJwtSvid(SvcFn<T2>),
+                    FetchJwtBundles(SvcFn<T3>),
+                    ValidateJwtSvid(SvcFn<T4>),
                     Unimplemented,
                 }
 
                 let svc = match req.uri().path().strip_prefix("/SpiffeWorkloadAPI/") {
                     Some("FetchX509SVID") => {
-                        Dispatcher::FetchX509Svid(SvcFn(move |req: Request<X509SvidRequest>| {
-                            let inner = inner.take().expect("only once");
-                            async move { T::fetch_x509_svid(&inner, req).await }
-                        }))
+                        Dispatch::FetchX509Svid(SvcFn(|req| T::fetch_x509_svid(inner, req)))
                     }
-                    Some("FetchX509Bundles") => Dispatcher::FetchX509Bundles(SvcFn(
-                        move |req: Request<X509BundlesRequest>| {
-                            let inner = inner.take().expect("only once");
-                            async move { T::fetch_x509_bundles(&inner, req).await }
-                        },
-                    )),
+                    Some("FetchX509Bundles") => {
+                        Dispatch::FetchX509Bundles(SvcFn(|req| T::fetch_x509_bundles(inner, req)))
+                    }
                     Some("FetchJWTSVID") => {
-                        Dispatcher::FetchJwtSvid(SvcFn(move |req: Request<JwtSvidRequest>| {
-                            let inner = inner.take().expect("only once");
-                            async move { T::fetch_jwt_svid(&inner, req).await }
-                        }))
+                        Dispatch::FetchJwtSvid(SvcFn(|req| T::fetch_jwt_svid(inner, req)))
                     }
-                    Some("FetchJWTBundles") => Dispatcher::FetchJwtBundles(SvcFn(
-                        move |req: Request<JwtBundlesRequest>| {
-                            let inner = inner.take().expect("only once");
-                            async move { T::fetch_jwt_bundles(&inner, req).await }
-                        },
-                    )),
-                    Some("ValidateJWTSVID") => Dispatcher::ValidateJwtSvid(SvcFn(
-                        move |req: Request<ValidateJwtSvidRequest>| {
-                            let inner = inner.take().expect("only once");
-                            async move { T::validate_jwt_svid(&inner, req).await }
-                        },
-                    )),
-                    _ => Dispatcher::Unimplemented,
+                    Some("FetchJWTBundles") => {
+                        Dispatch::FetchJwtBundles(SvcFn(|req| T::fetch_jwt_bundles(inner, req)))
+                    }
+                    Some("ValidateJWTSVID") => {
+                        Dispatch::ValidateJwtSvid(SvcFn(|req| T::validate_jwt_svid(inner, req)))
+                    }
+                    _ => Dispatch::Unimplemented,
                 };
 
                 let resp = match svc {
-                    Dispatcher::FetchX509Svid(svc) => {
-                        server_impl.make_grpc().server_streaming(svc, req).await
+                    Dispatch::FetchX509Svid(svc) => {
+                        server.make_grpc().server_streaming(svc, req).await
                     }
-                    Dispatcher::FetchX509Bundles(svc) => {
-                        server_impl.make_grpc().server_streaming(svc, req).await
+                    Dispatch::FetchX509Bundles(svc) => {
+                        server.make_grpc().server_streaming(svc, req).await
                     }
-                    Dispatcher::FetchJwtSvid(svc) => server_impl.make_grpc().unary(svc, req).await,
-                    Dispatcher::FetchJwtBundles(svc) => {
-                        server_impl.make_grpc().server_streaming(svc, req).await
+                    Dispatch::FetchJwtSvid(svc) => server.make_grpc().unary(svc, req).await,
+                    Dispatch::FetchJwtBundles(svc) => {
+                        server.make_grpc().server_streaming(svc, req).await
                     }
-                    Dispatcher::ValidateJwtSvid(svc) => {
-                        server_impl.make_grpc().unary(svc, req).await
-                    }
-                    Dispatcher::Unimplemented => {
+                    Dispatch::ValidateJwtSvid(svc) => server.make_grpc().unary(svc, req).await,
+                    Dispatch::Unimplemented => {
                         let mut response = HttpResponse::new(TonicBody::empty());
                         let headers = response.headers_mut();
                         headers.insert(
@@ -271,6 +261,7 @@ impl<T> NamedService for SpiffeWorkloadApiServer<T> {
     const NAME: &'static str = "SpiffeWorkloadAPI";
 }
 
+#[derive(Clone)]
 pub struct SvcFn<F>(F);
 
 impl<F, Fut, ReqTy, RespTy, E> Service<ReqTy> for SvcFn<F>

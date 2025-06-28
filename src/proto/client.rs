@@ -5,7 +5,7 @@ use http::uri::{PathAndQuery, Uri};
 use http_body::Body;
 use prost::bytes::Bytes;
 use tonic::{
-    GrpcMethod, IntoRequest, Request, Response, Status, Streaming,
+    GrpcMethod, IntoRequest, Request, Response, Result, Status, Streaming,
     body::Body as TonicBody,
     client::{Grpc, GrpcService},
     codec::{CompressionEncoding, ProstCodec},
@@ -35,7 +35,7 @@ fn make_request<T>(
     (req, PathAndQuery::from_static(path))
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub struct SpiffeWorkloadApiClient<T> {
     inner: Grpc<T>,
 }
@@ -48,8 +48,9 @@ where
     <T::ResponseBody as Body>::Error: Into<StdError> + Send,
 {
     pub fn with_origin(inner: T, origin: Uri) -> Self {
-        let inner = Grpc::with_origin(inner, origin);
-        Self { inner }
+        Self {
+            inner: Grpc::with_origin(inner, origin),
+        }
     }
 
     /// Compress requests with the given encoding.
@@ -91,7 +92,7 @@ where
     pub async fn fetch_x509_svid(
         &mut self,
         req: impl IntoRequest<X509SvidRequest>,
-    ) -> Result<Response<Streaming<X509SvidResponse>>, Status> {
+    ) -> Result<Response<Streaming<X509SvidResponse>>> {
         self.ready().await?;
 
         let (req, path) = make_request(
@@ -112,7 +113,7 @@ where
     pub async fn fetch_x509_bundles(
         &mut self,
         req: impl IntoRequest<X509BundlesRequest>,
-    ) -> Result<Response<Streaming<X509BundlesResponse>>, Status> {
+    ) -> Result<Response<Streaming<X509BundlesResponse>>> {
         self.ready().await?;
 
         let (req, path) = make_request(
@@ -132,7 +133,7 @@ where
     pub async fn fetch_jwt_svid(
         &mut self,
         req: impl IntoRequest<JwtSvidRequest>,
-    ) -> Result<Response<JwtSvidResponse>, Status> {
+    ) -> Result<Response<JwtSvidResponse>> {
         self.ready().await?;
 
         let (req, path) = make_request(
@@ -150,7 +151,7 @@ where
     pub async fn fetch_jwt_bundles(
         &mut self,
         req: impl IntoRequest<JwtBundlesRequest>,
-    ) -> Result<Response<Streaming<JwtBundlesResponse>>, Status> {
+    ) -> Result<Response<Streaming<JwtBundlesResponse>>> {
         self.ready().await?;
 
         let (req, path) = make_request(
@@ -169,7 +170,7 @@ where
     pub async fn validate_jwt_svid(
         &mut self,
         req: impl IntoRequest<ValidateJwtSvidRequest>,
-    ) -> Result<Response<ValidateJwtSvidResponse>, Status> {
+    ) -> Result<Response<ValidateJwtSvidResponse>> {
         self.ready().await?;
 
         let (req, path) = make_request(
@@ -182,7 +183,7 @@ where
     }
 
     #[inline]
-    fn ready(&mut self) -> impl Future<Output = Result<(), Status>> + use<'_, T> {
+    fn ready(&mut self) -> impl Future<Output = Result<()>> + use<'_, T> {
         self.inner
             .ready()
             .map_err(|e| Status::unknown(format!("Service was not ready: {}", e.into())))
