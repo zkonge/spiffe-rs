@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use prost::bytes::Bytes;
-use rustls_pki_types::{CertificateDer, CertificateRevocationListDer};
+use rustls_pki_types::CertificateRevocationListDer;
 use spiffe_id::TrustDomain;
 
 use crate::{
@@ -24,13 +24,13 @@ fn parse_x509_bundles(
 }
 
 #[derive(Clone, Debug)]
-pub struct X509SvidResponse {
+pub struct X509SvidContext {
     pub svids: Vec<X509Svid>,
     pub crl: Vec<CertificateRevocationListDer<'static>>,
-    pub federated_bundles: HashMap<TrustDomain<'static>, CertificateDer<'static>>,
+    pub federated_bundles: HashMap<TrustDomain<'static>, X509Bundle>,
 }
 
-impl TryFrom<proto::X509SvidResponse> for X509SvidResponse {
+impl TryFrom<proto::X509SvidResponse> for X509SvidContext {
     type Error = SpiffeError;
 
     fn try_from(
@@ -51,15 +51,15 @@ impl TryFrom<proto::X509SvidResponse> for X509SvidResponse {
             .collect();
         let federated_bundles = federated_bundles
             .into_iter()
-            .map(|(td, cert)| {
-                let td = TrustDomain::try_from(td)?;
-                let cert = CertificateDer::from(Into::<Vec<u8>>::into(cert));
+            .map(|(td, bundle)| {
+                let td: TrustDomain<'_> = TrustDomain::try_from(td)?;
+                let bundle = X509Bundle::try_from(bundle)?;
 
-                Ok::<_, Self::Error>((td, cert))
+                Ok::<_, Self::Error>((td, bundle))
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
 
-        Ok(X509SvidResponse {
+        Ok(X509SvidContext {
             svids,
             crl,
             federated_bundles,
@@ -68,18 +68,18 @@ impl TryFrom<proto::X509SvidResponse> for X509SvidResponse {
 }
 
 #[derive(Clone, Debug)]
-pub struct X509BundlesResponse {
+pub struct X509BundlesContext {
     pub crl: Vec<CertificateRevocationListDer<'static>>,
     pub bundles: HashMap<TrustDomain<'static>, X509Bundle>,
 }
 
-impl TryFrom<proto::X509BundlesResponse> for X509BundlesResponse {
+impl TryFrom<proto::X509BundlesResponse> for X509BundlesContext {
     type Error = SpiffeError;
 
     fn try_from(
         proto::X509BundlesResponse { crl, bundles }: proto::X509BundlesResponse,
     ) -> Result<Self, Self::Error> {
-        Ok(X509BundlesResponse {
+        Ok(X509BundlesContext {
             crl: crl
                 .into_iter()
                 .map(Into::<Vec<u8>>::into)
@@ -93,11 +93,11 @@ impl TryFrom<proto::X509BundlesResponse> for X509BundlesResponse {
 // structs below is internal purpose only
 
 #[derive(Clone, Debug)]
-pub(super) struct JwtSvidResponse {
+pub(super) struct JwtSvidContext {
     pub svids: Vec<JwtSvid>,
 }
 
-impl TryFrom<proto::JwtSvidResponse> for JwtSvidResponse {
+impl TryFrom<proto::JwtSvidResponse> for JwtSvidContext {
     type Error = SpiffeError;
 
     fn try_from(
@@ -107,7 +107,7 @@ impl TryFrom<proto::JwtSvidResponse> for JwtSvidResponse {
             .into_iter()
             .map(JwtSvid::try_from)
             .collect::<Result<_, _>>()
-            .map(|svids| JwtSvidResponse { svids })
+            .map(|svids| JwtSvidContext { svids })
     }
 }
 

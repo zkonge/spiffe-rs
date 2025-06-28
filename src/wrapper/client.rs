@@ -13,10 +13,10 @@ use tonic::{
 };
 
 pub use self::{
-    stream::{JwtBundlesStream, X509BundlesResponseStream, X509SvidResponseStream},
-    types::{X509BundlesResponse, X509SvidResponse},
+    stream::{JwtBundlesStream, X509BundlesContextStream, X509SvidContextStream},
+    types::{X509BundlesContext, X509SvidContext},
 };
-use crate::{JwtSvid, SpiffeError, StdError, client::types::JwtSvidResponse, proto};
+use crate::{JwtSvid, SpiffeError, StdError, client::types::JwtSvidContext, proto};
 
 impl From<SpiffeError> for Status {
     fn from(e: SpiffeError) -> Self {
@@ -78,18 +78,18 @@ where
         }
     }
 
-    pub async fn fetch_x509_svid(&self) -> Result<X509SvidResponseStream> {
+    pub async fn fetch_x509_svid(&self) -> Result<X509SvidContextStream> {
         let request = proto::X509SvidRequest {};
         let response = self.client.clone().fetch_x509_svid(request).await?;
 
-        Ok(X509SvidResponseStream(response.into_inner()))
+        Ok(X509SvidContextStream(response.into_inner()))
     }
 
-    pub async fn fetch_x509_bundles(&self) -> Result<X509BundlesResponseStream> {
+    pub async fn fetch_x509_bundles(&self) -> Result<X509BundlesContextStream> {
         let request = proto::X509BundlesRequest {};
         let response = self.client.clone().fetch_x509_bundles(request).await?;
 
-        Ok(X509BundlesResponseStream(response.into_inner()))
+        Ok(X509BundlesContextStream(response.into_inner()))
     }
 
     pub async fn fetch_jwt_svid(
@@ -109,7 +109,7 @@ where
         response
             .into_inner()
             .try_into()
-            .map(|r: JwtSvidResponse| r.svids)
+            .map(|r: JwtSvidContext| r.svids)
             .map_err(Into::into)
     }
 
