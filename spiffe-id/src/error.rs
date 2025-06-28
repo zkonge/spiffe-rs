@@ -2,8 +2,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum TrustDomainError {
-    #[error("too long")]
-    TooLong,
+    #[error("invalid length")]
+    InvalidLength,
 
     #[error("invalid character")]
     Character,

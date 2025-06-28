@@ -41,7 +41,7 @@ const fn validate_trust_domain(td: &[u8]) -> Result<(), TrustDomainError> {
     // 2.1. Trust Domain
     // 2.3. Maximum SPIFFE ID Length
     if td.is_empty() || td.len() > 255 {
-        return Err(TrustDomainError::TooLong);
+        return Err(TrustDomainError::InvalidLength);
     }
 
     // 2.1. Trust Domain
