@@ -47,12 +47,12 @@ impl SpiffeId {
 
         // 2.3. Maximum SPIFFE ID Length
         if id.len() > 2048 {
-            return Err(SpiffeIdError::InvalidComponentLength);
+            return Err(SpiffeIdError::TooLong);
         }
 
         // 2. SPIFFE Identity
         let Some((SPIFFE_SCHEME, sid)) = id.split_at_checked(SPIFFE_SCHEME.len()) else {
-            return Err(SpiffeIdError::InvalidScheme);
+            return Err(SpiffeIdError::Scheme);
         };
 
         // ASCII char would be ensured by the following check
@@ -63,7 +63,7 @@ impl SpiffeId {
             .iter()
             .position(|&x| x == b'/')
             .and_then(|offset| bid.split_at_checked(offset))
-            .ok_or(SpiffeIdError::InvalidPathSeparator)?;
+            .ok_or(SpiffeIdError::PathSeparator)?;
 
         validate_trust_domain(td)?;
 
@@ -74,7 +74,7 @@ impl SpiffeId {
 
         // 2.2. Path
         if !path.iter().cloned().all(validate_path_charset) {
-            return Err(SpiffeIdError::InvalidSpiffeIdCharacter);
+            return Err(SpiffeIdError::Character);
         }
 
         // 2.2. Path

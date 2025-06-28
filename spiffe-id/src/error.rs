@@ -1,25 +1,37 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
+pub enum TrustDomainError {
+    #[error("too long")]
+    TooLong,
+
+    #[error("invalid character")]
+    Character,
+}
+
+#[derive(Error, Debug)]
 pub enum SpiffeIdError {
     #[error("invalid URL scheme")]
-    InvalidScheme,
+    Scheme,
 
-    #[error("invalid SPIFFE ID character")]
-    InvalidSpiffeIdCharacter,
+    #[error("invalid character")]
+    Character,
 
     #[error("invalid path separator")]
-    InvalidPathSeparator,
+    PathSeparator,
 
     #[error("trailing slash")]
     TrailingSlash,
 
-    #[error("invalid SPIFFE ID component length")]
-    InvalidComponentLength,
+    #[error("too long")]
+    TooLong,
 
     #[error("empty segment")]
     EmptySegment,
 
     #[error("dot segment")]
     DotSegment,
+
+    #[error("invalid trust domain: {0}")]
+    TrustDomain(#[from] TrustDomainError),
 }

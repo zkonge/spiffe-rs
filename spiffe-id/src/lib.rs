@@ -7,7 +7,11 @@ mod id;
 mod serde_support;
 mod trust_domain;
 
-pub use crate::{error::SpiffeIdError, id::SpiffeId, trust_domain::TrustDomain};
+pub use crate::{
+    error::{SpiffeIdError, TrustDomainError},
+    id::SpiffeId,
+    trust_domain::TrustDomain,
+};
 
 const SPIFFE_SCHEME: &str = "spiffe://";
 
@@ -33,11 +37,11 @@ const fn validate_path_charset(c: u8) -> bool {
 }
 
 #[inline]
-const fn validate_trust_domain(td: &[u8]) -> Result<(), SpiffeIdError> {
+const fn validate_trust_domain(td: &[u8]) -> Result<(), TrustDomainError> {
     // 2.1. Trust Domain
     // 2.3. Maximum SPIFFE ID Length
     if td.is_empty() || td.len() > 255 {
-        return Err(SpiffeIdError::InvalidComponentLength);
+        return Err(TrustDomainError::TooLong);
     }
 
     // 2.1. Trust Domain
@@ -45,7 +49,7 @@ const fn validate_trust_domain(td: &[u8]) -> Result<(), SpiffeIdError> {
 
     while i < td.len() {
         if !validate_trust_domain_charset(td[i]) {
-            return Err(SpiffeIdError::InvalidSpiffeIdCharacter);
+            return Err(TrustDomainError::Character);
         }
         i += 1;
     }

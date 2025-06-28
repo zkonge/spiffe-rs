@@ -34,11 +34,11 @@
 //!
 //! # Errors
 //!
-//! Returns a [`SpiffeIdError`] if the provided trust domain is invalid according to SPIFFE specification.
+//! Returns a [`TrustDomainError`] if the provided trust domain is invalid according to SPIFFE specification.
 use alloc::{borrow::Cow, string::String};
 use core::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-use crate::{SPIFFE_SCHEME, SpiffeIdError, tri, validate_trust_domain};
+use crate::{SPIFFE_SCHEME, error::TrustDomainError, tri, validate_trust_domain};
 
 /// The administrative boundary for identities within the SPIFFE ecosystem.
 ///
@@ -64,7 +64,7 @@ impl<'a> TrustDomain<'a> {
     /// let td = TrustDomain::new("spiffe://example.org").unwrap();
     /// assert_eq!(td.as_str(), "example.org");
     /// ```
-    pub fn new(td: &'a str) -> Result<Self, SpiffeIdError> {
+    pub fn new(td: &'a str) -> Result<Self, TrustDomainError> {
         let td = td.strip_prefix(SPIFFE_SCHEME).unwrap_or(td);
 
         tri!(validate_trust_domain(td.as_bytes()));
@@ -167,7 +167,7 @@ impl<'a> TrustDomain<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for TrustDomain<'a> {
-    type Error = SpiffeIdError;
+    type Error = TrustDomainError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Self::new(value)
@@ -175,7 +175,7 @@ impl<'a> TryFrom<&'a str> for TrustDomain<'a> {
 }
 
 impl TryFrom<String> for TrustDomain<'static> {
-    type Error = SpiffeIdError;
+    type Error = TrustDomainError;
 
     fn try_from(td: String) -> Result<Self, Self::Error> {
         // Delegate validation to the `TrustDomain::new` method.
@@ -189,7 +189,7 @@ impl TryFrom<String> for TrustDomain<'static> {
 }
 
 impl<'a> TryFrom<Cow<'a, str>> for TrustDomain<'a> {
-    type Error = SpiffeIdError;
+    type Error = TrustDomainError;
 
     fn try_from(td: Cow<'a, str>) -> Result<Self, Self::Error> {
         match td {
