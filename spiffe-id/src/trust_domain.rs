@@ -182,7 +182,7 @@ impl TryFrom<String> for TrustDomain<'static> {
         //
         // Here we can't use [`Self::new`] because [`Self`] is [`TrustDomain<'static>`],
         // and it requires a static lifetime reference, but "&td" only has a temporary one.
-        TrustDomain::new(&td)?;
+        tri!(TrustDomain::new(&td));
 
         Ok(TrustDomain { td: Cow::Owned(td) })
     }

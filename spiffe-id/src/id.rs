@@ -25,7 +25,7 @@ use core::{
 };
 
 use crate::{
-    SPIFFE_SCHEME, SpiffeIdError, TrustDomain, validate_path_charset, validate_trust_domain,
+    SPIFFE_SCHEME, SpiffeIdError, TrustDomain, tri, validate_path_charset, validate_trust_domain,
 };
 
 /// A unique identifier for a workload within the SPIFFE ecosystem.
@@ -59,13 +59,16 @@ impl SpiffeId {
         let bid = sid.as_bytes();
 
         // 2. SPIFFE Identity
-        let (td, path) = bid
-            .iter()
-            .position(|&x| x == b'/')
-            .and_then(|offset| bid.split_at_checked(offset))
-            .ok_or(SpiffeIdError::PathSeparator)?;
+        let (td, path) = tri!(
+            bid.iter()
+                .position(|&x| x == b'/')
+                .and_then(|offset| bid.split_at_checked(offset))
+                .ok_or(SpiffeIdError::PathSeparator)
+        );
 
-        validate_trust_domain(td)?;
+        if let Err(e) = validate_trust_domain(td) {
+            return Err(SpiffeIdError::TrustDomain(e));
+        }
 
         // 2.2. Path
         if path.ends_with(b"/") {
