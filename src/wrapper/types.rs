@@ -1,14 +1,13 @@
 extern crate alloc;
 
-use std::fmt::{Debug, Formatter, Result as FmtResult};
-
 use alloc::{boxed::Box, string::String, vec::Vec};
+use core::fmt::{Debug, Formatter, Result as FmtResult};
 
 use prost::bytes::Bytes;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use spiffe_id::SpiffeId;
 
-use super::{InvalidDerDataError, SpiffeError, split_certificates};
+use super::{InvalidDerError, SpiffeError, split_certificates};
 use crate::proto::{JwtSvid as ProtoJwtSvid, X509Svid as ProtoX509Svid};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -110,7 +109,7 @@ impl TryFrom<Bytes> for X509Bundle {
 
     fn try_from(value: Bytes) -> Result<Self, Self::Error> {
         if value.is_empty() {
-            return Err(SpiffeError::InvalidDerData(InvalidDerDataError));
+            return Err(SpiffeError::InvalidDer(InvalidDerError));
         }
 
         Ok(Self {
@@ -216,7 +215,7 @@ impl TryFrom<ProtoX509Svid> for X509Svid {
         }: ProtoX509Svid,
     ) -> Result<Self, Self::Error> {
         if x509_svid.is_empty() || x509_svid_key.is_empty() || bundle.is_empty() {
-            return Err(SpiffeError::EmptySvid);
+            return Err(SpiffeError::InvalidDer(InvalidDerError));
         }
 
         Ok(Self {

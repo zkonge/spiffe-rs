@@ -11,20 +11,20 @@ pub enum SpiffeError {
     #[error("invalid trust domain: {0}")]
     TrustDomain(#[from] TrustDomainError),
 
-    #[error("major part of SVID is empty")]
-    EmptySvid,
+    #[error("JWT SVID is not valid")]
+    InvalidJwtSvid,
 
-    #[error("JWT bundle is not valid UTF-8")]
+    #[error("JWT bundle is not valid")]
     InvalidJwtBundle,
 
     #[error("invalid DER data")]
-    InvalidDerData(#[from] InvalidDerDataError),
+    InvalidDer(#[from] InvalidDerError),
 }
 
 #[derive(Error, Debug)]
-pub struct InvalidDerDataError;
+pub struct InvalidDerError;
 
-impl Display for InvalidDerDataError {
+impl Display for InvalidDerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.write_str("invalid DER data")
     }

@@ -12,11 +12,12 @@ use tonic::{
     Result, Status, body::Body as TonicBody, client::GrpcService, codec::CompressionEncoding,
 };
 
+use self::types::JwtSvidContext;
 pub use self::{
     stream::{JwtBundlesStream, X509BundlesContextStream, X509SvidContextStream},
     types::{X509BundlesContext, X509SvidContext},
 };
-use crate::{JwtSvid, SpiffeError, StdError, client::types::JwtSvidContext, proto};
+use crate::{JwtSvid, SpiffeError, StdError, proto};
 
 impl From<SpiffeError> for Status {
     fn from(e: SpiffeError) -> Self {

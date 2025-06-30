@@ -3,7 +3,7 @@ use core::str;
 use rustls_pki_types::CertificateDer;
 use spiffe_id::SpiffeId;
 
-use super::{InvalidDerDataError, SpiffeError};
+use super::{InvalidDerError, SpiffeError};
 
 type Tlv<'a> = (u8, &'a [u8]);
 
@@ -55,7 +55,7 @@ pub struct CertificateIter<'a> {
 }
 
 impl<'a> Iterator for CertificateIter<'a> {
-    type Item = Result<CertificateDer<'a>, InvalidDerDataError>;
+    type Item = Result<CertificateDer<'a>, InvalidDerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.der.is_empty() {
@@ -64,7 +64,7 @@ impl<'a> Iterator for CertificateIter<'a> {
 
         let (rem, cert) = match split_cert(self.der) {
             Some((r, c)) => (r, Ok(c)),
-            None => ([].as_slice(), Err(InvalidDerDataError)),
+            None => ([].as_slice(), Err(InvalidDerError)),
         };
         self.der = rem;
 
@@ -89,7 +89,9 @@ impl<'a> Iterator for CertificateIter<'a> {
 }
 
 /// SPIFFE workload standard uses a very ugly way to represent multiple DER-encoded X.509 certificates:
-/// they are concatenated together without any separator. This function splits them into individual
+/// they are concatenated together without any separator. This function splits them into individual.
+///
+/// **NOTICE**: This function does not validate certificates, it just splits them.
 pub fn split_certificates(der: &[u8]) -> CertificateIter<'_> {
     CertificateIter { der }
 }
@@ -97,8 +99,12 @@ pub fn split_certificates(der: &[u8]) -> CertificateIter<'_> {
 const SAN_OID_ASN1_BYTES: [u8; 5] = [0x06, 0x03, 0x55, 0x1D, 0x11];
 
 /// Extracts SPIFFE ID from a trusted X.509 SVID
-pub fn spiffe_id_from_x509_svid(cert: &CertificateDer) -> Result<SpiffeId, SpiffeError> {
-    const INVALID_DER: SpiffeError = SpiffeError::InvalidDerData(InvalidDerDataError);
+///
+/// It is assumed that the certificate is a trusted valid DER-encoded X.509 certificate.
+///
+/// Usually, this function is used to extract SPIFFE ID from a certificate that is already verified
+pub fn spiffe_id_from_x509_svid_unchecked(cert: &CertificateDer) -> Result<SpiffeId, SpiffeError> {
+    const INVALID_DER: SpiffeError = SpiffeError::InvalidDer(InvalidDerError);
 
     // unpack the `Certificate`, ensure only one certificate is present
     let Some(([], (0x30, cert))) = read_der_tlv(cert.as_ref()) else {
@@ -233,7 +239,7 @@ SQ==
     #[test]
     fn test_spiffe_id_from_x509_svid() {
         assert_eq!(
-            spiffe_id_from_x509_svid(&CertificateDer::from_slice(CERT)).unwrap(),
+            spiffe_id_from_x509_svid_unchecked(&CertificateDer::from_slice(CERT)).unwrap(),
             SpiffeId::new("spiffe://example.org/zkonge").unwrap()
         );
     }

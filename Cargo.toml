@@ -35,6 +35,15 @@ rustls-pki-types = { version = "1.11.0", features = [
     "alloc",
 ], default-features = false, optional = true }
 tower-service = { version = "0.3.3", optional = true }
+serde_json = { version = "1.0.140", default-features = false, features = [
+    "alloc",
+], optional = true }
+serde = { workspace = true, features = [
+    "derive",
+], default-features = false, optional = true }
+base64ct = { version = "1.8.0", default-features = false, features = [
+    "alloc",
+], optional = true }
 
 [dev-dependencies]
 const-decoder = "0.4.0"
@@ -44,6 +53,9 @@ default = ["wrapper", "client"]
 
 # high-level wrapper around the low-level workload APIs
 wrapper = ["dep:thiserror", "dep:rustls-pki-types", "dep:spiffe-id"]
+
+# enable JWT support in wrapper
+jwt = ["wrapper", "dep:base64ct", "dep:serde", "dep:serde_json"]
 
 # allow to create high-level types without checking the validation
 unchecked-api = []
