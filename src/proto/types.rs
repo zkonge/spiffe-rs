@@ -153,6 +153,7 @@ pub struct ValidateJwtSvidResponse {
     /// Required. The SPIFFE ID of the validated JWT-SVID.
     #[prost(string, tag = "1")]
     pub spiffe_id: String,
+
     /// Required. Claims contained within the payload of the validated JWT-SVID.
     /// This includes both SPIFFE-required and non-required claims.
     #[prost(message, optional, tag = "2")]
