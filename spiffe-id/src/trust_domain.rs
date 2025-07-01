@@ -184,6 +184,11 @@ impl TryFrom<String> for TrustDomain<'static> {
         // and it requires a static lifetime reference, but "&td" only has a temporary one.
         tri!(TrustDomain::new(&td));
 
+        let td = match td.strip_prefix(SPIFFE_SCHEME) {
+            Some(stripped) => stripped.into(),
+            None => td,
+        };
+
         Ok(TrustDomain { td: Cow::Owned(td) })
     }
 }
