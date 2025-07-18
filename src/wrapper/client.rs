@@ -6,8 +6,8 @@ use std::iter;
 use http::Uri;
 use http_body::Body;
 use prost::bytes::Bytes;
-pub use prost_types::Struct as Claims;
-use spiffe_id::SpiffeId;
+#[cfg(feature = "jwt")]
+pub use serde_json::{Map, Number, Value};
 use tonic::{
     Result, Status, body::Body as TonicBody, client::GrpcService, codec::CompressionEncoding,
 };
@@ -121,11 +121,12 @@ where
         Ok(JwtBundlesStream(response.into_inner()))
     }
 
+    #[cfg(feature = "jwt")]
     pub async fn validate_jwt_svid(
         &self,
         audience: impl Into<String>,
         svid: impl Into<String>,
-    ) -> Result<(SpiffeId, Claims)> {
+    ) -> Result<(spiffe_id::SpiffeId, Value)> {
         let request = proto::ValidateJwtSvidRequest {
             audience: audience.into(),
             svid: svid.into(),
@@ -133,8 +134,39 @@ where
         let response = self.client.clone().validate_jwt_svid(request).await?;
 
         let proto::ValidateJwtSvidResponse { spiffe_id, claims } = response.into_inner();
-        let spiffe_id = SpiffeId::new(spiffe_id).map_err(SpiffeError::SpiffeId)?;
+        let spiffe_id = spiffe_id::SpiffeId::new(spiffe_id).map_err(SpiffeError::SpiffeId)?;
 
-        Ok((spiffe_id, claims.unwrap_or_default()))
+        Ok((
+            spiffe_id,
+            claims.map_or(Value::Null, |v| {
+                claims_from_prost_value(prost_types::Value {
+                    kind: Some(prost_types::value::Kind::StructValue(v)),
+                })
+            }),
+        ))
+    }
+}
+
+// blocked by https://github.com/tokio-rs/prost/issues/852
+#[cfg(feature = "jwt")]
+fn claims_from_prost_value(i: prost_types::Value) -> Value {
+    use prost_types::value::Kind;
+
+    let i = match i.kind {
+        Some(i) => i,
+        None => return Value::Null,
+    };
+
+    match i {
+        Kind::NullValue(_) => Value::Null,
+        Kind::NumberValue(n) => Number::from_f64(n).map_or(Value::Null, Value::Number),
+        Kind::StringValue(s) => Value::String(s),
+        Kind::BoolValue(b) => Value::Bool(b),
+        Kind::StructValue(x) => x
+            .fields
+            .into_iter()
+            .map(|(k, v)| (k, claims_from_prost_value(v)))
+            .collect(),
+        Kind::ListValue(x) => x.values.into_iter().map(claims_from_prost_value).collect(),
     }
 }

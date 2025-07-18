@@ -49,7 +49,7 @@ base64ct = { version = "1.8.0", default-features = false, features = [
 const-decoder = "0.4.0"
 
 [features]
-default = ["wrapper", "client"]
+default = ["wrapper", "client", "jwt"]
 
 # high-level wrapper around the low-level workload APIs
 wrapper = ["dep:thiserror", "dep:rustls-pki-types", "dep:spiffe-id"]
