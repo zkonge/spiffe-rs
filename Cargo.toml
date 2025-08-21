@@ -17,12 +17,11 @@ edition.workspace = true
 [dependencies]
 spiffe-id = { path = "spiffe-id", optional = true }
 
-prost = "0.13.5"
-prost-types = "0.13.5"
+prost = "0.14.1"
+prost-types = "0.14.1"
 
-tonic = { version = "0.13.0", default-features = false, features = [
-    "prost",
-], optional = true }
+tonic = { version = "0.14.1", default-features = false, optional = true }
+tonic-prost = { version = "0.14.1", default-features = false, optional = true }
 futures-util = { version = "0.3.31", default-features = false, features = [
     "alloc",
 ], optional = true }
@@ -69,6 +68,7 @@ server = ["_grpc"]
 
 _grpc = [
     "dep:tonic",
+    "dep:tonic-prost",
     "dep:futures-util",
     "dep:http",
     "dep:http-body",

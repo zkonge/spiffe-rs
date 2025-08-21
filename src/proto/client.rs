@@ -8,9 +8,10 @@ use tonic::{
     GrpcMethod, IntoRequest, Request, Response, Result, Status, Streaming,
     body::Body as TonicBody,
     client::{Grpc, GrpcService},
-    codec::{CompressionEncoding, ProstCodec},
+    codec::CompressionEncoding,
     metadata::{MetadataKey, MetadataValue},
 };
+use tonic_prost::ProstCodec;
 
 use super::{
     JwtBundlesRequest, JwtBundlesResponse, JwtSvidRequest, JwtSvidResponse, SPIFFE_METADATA_KEY,

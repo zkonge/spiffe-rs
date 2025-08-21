@@ -12,11 +12,12 @@ use prost::Message;
 use tonic::{
     Code, Request, Response, Result, Status,
     body::Body as TonicBody,
-    codec::{CompressionEncoding, EnabledCompressionEncodings, ProstCodec},
+    codec::{CompressionEncoding, EnabledCompressionEncodings},
     metadata::GRPC_CONTENT_TYPE,
     server::{Grpc, NamedService},
     service::{Interceptor, interceptor::InterceptedService},
 };
+use tonic_prost::ProstCodec;
 use tower_service::Service;
 
 use super::{
