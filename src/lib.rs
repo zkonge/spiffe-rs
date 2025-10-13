@@ -7,3 +7,4 @@ type StdError = Box<dyn core::error::Error + Send + Sync + 'static>;
 
 #[cfg(feature = "wrapper")]
 pub use crate::wrapper::*;
+pub use spiffe_id;
