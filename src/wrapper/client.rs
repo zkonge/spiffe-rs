@@ -6,11 +6,7 @@ use std::iter;
 use http::Uri;
 use http_body::Body;
 use prost::bytes::Bytes;
-#[cfg(feature = "jwt")]
-pub use serde_json::{Map, Number, Value};
-use tonic::{
-    Result, Status, body::Body as TonicBody, client::GrpcService, codec::CompressionEncoding,
-};
+use tonic::{Result, Status, body::Body as TonicBody, client::GrpcService};
 
 use self::types::JwtSvidContext;
 pub use self::{
@@ -40,24 +36,6 @@ where
     pub fn with_origin(transport: T, origin: Uri) -> Self {
         Self {
             client: proto::client::SpiffeWorkloadApiClient::with_origin(transport, origin),
-        }
-    }
-
-    /// Compress requests with the given encoding.
-    /// This requires the server to support it otherwise it might respond with an
-    /// error.
-    #[must_use]
-    pub fn send_compressed(self, encoding: CompressionEncoding) -> Self {
-        Self {
-            client: self.client.send_compressed(encoding),
-        }
-    }
-
-    /// Enable decompressing responses.
-    #[must_use]
-    pub fn accept_compressed(self, encoding: CompressionEncoding) -> Self {
-        Self {
-            client: self.client.accept_compressed(encoding),
         }
     }
 
@@ -126,7 +104,7 @@ where
         &self,
         audience: impl Into<String>,
         svid: impl Into<String>,
-    ) -> Result<(spiffe_id::SpiffeId, Value)> {
+    ) -> Result<(spiffe_id::SpiffeId, serde_json::Value)> {
         let request = proto::ValidateJwtSvidRequest {
             audience: audience.into(),
             svid: svid.into(),
@@ -138,7 +116,7 @@ where
 
         Ok((
             spiffe_id,
-            claims.map_or(Value::Null, |v| {
+            claims.map_or(serde_json::Value::Null, |v| {
                 claims_from_prost_value(prost_types::Value {
                     kind: Some(prost_types::value::Kind::StructValue(v)),
                 })
@@ -149,8 +127,9 @@ where
 
 // blocked by https://github.com/tokio-rs/prost/issues/852
 #[cfg(feature = "jwt")]
-fn claims_from_prost_value(i: prost_types::Value) -> Value {
+fn claims_from_prost_value(i: prost_types::Value) -> serde_json::Value {
     use prost_types::value::Kind;
+    use serde_json::{Number, Value};
 
     let i = match i.kind {
         Some(i) => i,

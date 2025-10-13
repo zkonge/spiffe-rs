@@ -8,7 +8,6 @@ use tonic::{
     GrpcMethod, IntoRequest, Request, Response, Result, Status, Streaming,
     body::Body as TonicBody,
     client::{Grpc, GrpcService},
-    codec::CompressionEncoding,
     metadata::{MetadataKey, MetadataValue},
 };
 use tonic_prost::ProstCodec;
@@ -52,22 +51,6 @@ where
         Self {
             inner: Grpc::with_origin(inner, origin),
         }
-    }
-
-    /// Compress requests with the given encoding.
-    /// This requires the server to support it otherwise it might respond with an
-    /// error.
-    #[must_use]
-    pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
-        self.inner = self.inner.send_compressed(encoding);
-        self
-    }
-
-    /// Enable decompressing responses.
-    #[must_use]
-    pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
-        self.inner = self.inner.accept_compressed(encoding);
-        self
     }
 
     /// Limits the maximum size of a decoded message.

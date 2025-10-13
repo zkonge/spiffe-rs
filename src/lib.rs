@@ -1,7 +1,4 @@
-#[cfg(feature = "low-level")]
 pub mod proto;
-#[cfg(not(feature = "low-level"))]
-mod proto;
 #[cfg(feature = "wrapper")]
 mod wrapper;
 

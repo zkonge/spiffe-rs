@@ -59,9 +59,6 @@ jwt = ["wrapper", "dep:base64ct", "dep:serde", "dep:serde_json"]
 # allow to create high-level types without checking the validation
 unchecked-api = []
 
-# low-level APIs, exposed as `spiffe::proto`, if you want to implement your own workload API
-low-level = []
-
 # client abstraction, without this, only basic types are available
 client = ["_grpc"]
 server = ["_grpc"]
