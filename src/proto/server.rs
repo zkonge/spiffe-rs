@@ -6,13 +6,12 @@ use std::{
 };
 
 use futures_util::Stream;
-use http::{HeaderValue, Response as HttpResponse, header::CONTENT_TYPE};
+use http::{HeaderValue, Request as HttpRequest, Response as HttpResponse, header::CONTENT_TYPE};
 use http_body::Body;
 use prost::Message;
 use tonic::{
     Code, Request, Response, Result, Status,
     body::Body as TonicBody,
-    codec::{CompressionEncoding, EnabledCompressionEncodings},
     metadata::GRPC_CONTENT_TYPE,
     server::{Grpc, NamedService},
     service::{Interceptor, interceptor::InterceptedService},
@@ -79,8 +78,6 @@ pub trait SpiffeWorkloadApi: Send + Sync + 'static {
 #[derive(Debug)]
 pub struct SpiffeWorkloadApiServer<T> {
     inner: Arc<T>,
-    accept_compression_encodings: EnabledCompressionEncodings,
-    send_compression_encodings: EnabledCompressionEncodings,
     max_decoding_message_size: Option<usize>,
     max_encoding_message_size: Option<usize>,
 }
@@ -89,8 +86,6 @@ impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
     pub fn from_arc(inner: Arc<T>) -> Self {
         Self {
             inner,
-            accept_compression_encodings: Default::default(),
-            send_compression_encodings: Default::default(),
             max_decoding_message_size: None,
             max_encoding_message_size: None,
         }
@@ -101,20 +96,6 @@ impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
         F: Interceptor,
     {
         InterceptedService::new(Self::from_arc(inner), interceptor)
-    }
-
-    /// Enable decompressing requests with the given encoding.
-    #[must_use]
-    pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
-        self.accept_compression_encodings.enable(encoding);
-        self
-    }
-
-    /// Compress responses with the given encoding, if the client supports it.
-    #[must_use]
-    pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
-        self.send_compression_encodings.enable(encoding);
-        self
     }
 
     /// Limits the maximum size of a decoded message.
@@ -142,22 +123,17 @@ impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
         U: Message + 'static,
         V: Message + Default + 'static,
     {
-        Grpc::new(ProstCodec::new())
-            .apply_compression_config(
-                self.accept_compression_encodings,
-                self.send_compression_encodings,
-            )
-            .apply_max_message_size_config(
-                self.max_decoding_message_size,
-                self.max_encoding_message_size,
-            )
+        Grpc::new(ProstCodec::new()).apply_max_message_size_config(
+            self.max_decoding_message_size,
+            self.max_encoding_message_size,
+        )
     }
 
     #[must_use]
     pub fn into_service<B>(
         self,
     ) -> impl Service<
-        http::Request<B>,
+        HttpRequest<B>,
         Response = HttpResponse<TonicBody>,
         Error = Infallible,
         Future = impl Future<Output = Result<HttpResponse<TonicBody>, Infallible>> + Send,
@@ -166,7 +142,7 @@ impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
-        SvcFn(move |req: http::Request<B>| {
+        SvcFn(move |req: HttpRequest<B>| {
             let server = self.clone();
             async move {
                 if req
@@ -217,8 +193,6 @@ impl<T> Clone for SpiffeWorkloadApiServer<T> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-            accept_compression_encodings: self.accept_compression_encodings,
-            send_compression_encodings: self.send_compression_encodings,
             max_decoding_message_size: self.max_decoding_message_size,
             max_encoding_message_size: self.max_encoding_message_size,
         }
@@ -230,7 +204,7 @@ impl<T> NamedService for SpiffeWorkloadApiServer<T> {
 }
 
 #[derive(Clone)]
-pub struct SvcFn<F>(F);
+struct SvcFn<F>(F);
 
 impl<F, Fut, ReqTy, RespTy, E> Service<ReqTy> for SvcFn<F>
 where
