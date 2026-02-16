@@ -33,6 +33,15 @@ where
     T::ResponseBody: Body<Data = Bytes> + Send + 'static,
     <T::ResponseBody as Body>::Error: Into<StdError> + Send,
 {
+    pub fn new(transport: T) -> Self {
+        Self {
+            client: spiffe_proto::client::SpiffeWorkloadApiClient::with_origin(
+                transport,
+                Uri::from_static("http://tonic"),
+            ),
+        }
+    }
+
     pub fn with_origin(transport: T, origin: Uri) -> Self {
         Self {
             client: spiffe_proto::client::SpiffeWorkloadApiClient::with_origin(transport, origin),
@@ -99,6 +108,7 @@ where
         Ok(JwtBundlesStream(response.into_inner()))
     }
 
+    #[cfg(feature = "jwt")]
     pub async fn validate_jwt_svid(
         &self,
         audience: impl Into<String>,
@@ -125,6 +135,7 @@ where
 }
 
 // blocked by https://github.com/tokio-rs/prost/issues/852
+#[cfg(feature = "jwt")]
 fn claims_from_prost_value(i: prost_types::Value) -> serde_json::Value {
     use prost_types::value::Kind;
     use serde_json::{Number, Value};

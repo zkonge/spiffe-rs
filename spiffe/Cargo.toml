@@ -26,8 +26,6 @@ base64ct = { workspace = true, features = ["alloc"], optional = true }
 const-decoder.workspace = true
 
 [features]
-default = ["jwt", "unchecked-api"]
-
 # enable JWT support in wrapper
 jwt = ["dep:base64ct", "dep:serde", "dep:serde_json"]
 

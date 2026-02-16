@@ -8,12 +8,10 @@ mod error;
 mod jwt;
 mod types;
 
-#[cfg(feature = "unchecked-api")]
-pub use self::der::spiffe_id_from_x509_svid_unchecked;
-#[cfg(all(feature = "jwt", feature = "unchecked-api"))]
+#[cfg(all(feature = "jwt"))]
 pub use self::jwt::spiffe_id_from_jwt_svid_unchecked;
 pub use self::{
-    der::{CertificateIter, split_certificates},
+    der::{CertificateIter, spiffe_id_from_x509_svid_unchecked, split_certificates},
     error::{InvalidDerError, SpiffeError},
     types::{JwtSvid, X509Bundle, X509Svid},
 };
