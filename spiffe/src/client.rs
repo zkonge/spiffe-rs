@@ -13,7 +13,7 @@ pub use self::{
     stream::{JwtBundlesStream, X509BundlesContextStream, X509SvidContextStream},
     types::{X509BundlesContext, X509SvidContext},
 };
-use crate::{JwtSvid, SpiffeError, StdError, proto};
+use crate::{JwtSvid, SpiffeError, StdError};
 
 impl From<SpiffeError> for Status {
     fn from(e: SpiffeError) -> Self {
@@ -23,7 +23,7 @@ impl From<SpiffeError> for Status {
 
 #[derive(Clone, Debug)]
 pub struct SpiffeWorkloadApiClient<T> {
-    client: proto::client::SpiffeWorkloadApiClient<T>,
+    client: spiffe_proto::client::SpiffeWorkloadApiClient<T>,
 }
 
 impl<T> SpiffeWorkloadApiClient<T>
@@ -35,7 +35,7 @@ where
 {
     pub fn with_origin(transport: T, origin: Uri) -> Self {
         Self {
-            client: proto::client::SpiffeWorkloadApiClient::with_origin(transport, origin),
+            client: spiffe_proto::client::SpiffeWorkloadApiClient::with_origin(transport, origin),
         }
     }
 
@@ -58,14 +58,14 @@ where
     }
 
     pub async fn fetch_x509_svid(&self) -> Result<X509SvidContextStream> {
-        let request = proto::X509SvidRequest {};
+        let request = spiffe_proto::X509SvidRequest {};
         let response = self.client.clone().fetch_x509_svid(request).await?;
 
         Ok(X509SvidContextStream(response.into_inner()))
     }
 
     pub async fn fetch_x509_bundles(&self) -> Result<X509BundlesContextStream> {
-        let request = proto::X509BundlesRequest {};
+        let request = spiffe_proto::X509BundlesRequest {};
         let response = self.client.clone().fetch_x509_bundles(request).await?;
 
         Ok(X509BundlesContextStream(response.into_inner()))
@@ -77,7 +77,7 @@ where
         more_audiences: impl Into<Vec<String>>,
         spiffe_id: Option<String>,
     ) -> Result<Vec<JwtSvid>> {
-        let request = proto::JwtSvidRequest {
+        let request = spiffe_proto::JwtSvidRequest {
             audience: iter::once(audience.into())
                 .chain(more_audiences.into().into_iter())
                 .collect(),
@@ -93,25 +93,24 @@ where
     }
 
     pub async fn fetch_jwt_bundles(&self) -> Result<JwtBundlesStream> {
-        let request = proto::JwtBundlesRequest {};
+        let request = spiffe_proto::JwtBundlesRequest {};
         let response = self.client.clone().fetch_jwt_bundles(request).await?;
 
         Ok(JwtBundlesStream(response.into_inner()))
     }
 
-    #[cfg(feature = "jwt")]
     pub async fn validate_jwt_svid(
         &self,
         audience: impl Into<String>,
         svid: impl Into<String>,
     ) -> Result<(spiffe_id::SpiffeId, serde_json::Value)> {
-        let request = proto::ValidateJwtSvidRequest {
+        let request = spiffe_proto::ValidateJwtSvidRequest {
             audience: audience.into(),
             svid: svid.into(),
         };
         let response = self.client.clone().validate_jwt_svid(request).await?;
 
-        let proto::ValidateJwtSvidResponse { spiffe_id, claims } = response.into_inner();
+        let spiffe_proto::ValidateJwtSvidResponse { spiffe_id, claims } = response.into_inner();
         let spiffe_id = spiffe_id::SpiffeId::new(spiffe_id).map_err(SpiffeError::SpiffeId)?;
 
         Ok((
@@ -126,7 +125,6 @@ where
 }
 
 // blocked by https://github.com/tokio-rs/prost/issues/852
-#[cfg(feature = "jwt")]
 fn claims_from_prost_value(i: prost_types::Value) -> serde_json::Value {
     use prost_types::value::Kind;
     use serde_json::{Number, Value};

@@ -11,10 +11,10 @@ pub enum SpiffeError {
     #[error("invalid trust domain: {0}")]
     TrustDomain(#[from] TrustDomainError),
 
-    #[error("JWT SVID is not valid")]
+    #[error("JWT SVID is invalid")]
     InvalidJwtSvid,
 
-    #[error("JWT bundle is not valid")]
+    #[error("JWT bundle is invalid")]
     InvalidJwtBundle,
 
     #[error("invalid DER data")]

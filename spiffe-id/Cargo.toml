@@ -4,7 +4,7 @@ version = "0.0.0"
 edition.workspace = true
 
 [dependencies]
-serde = { workspace = true, default-features = false, optional = true }
+serde = { workspace = true, optional = true }
 
 [features]
 serde = ["dep:serde"]

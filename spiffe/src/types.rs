@@ -1,14 +1,11 @@
-extern crate alloc;
-
-use alloc::{boxed::Box, string::String, vec::Vec};
-use core::fmt::{Debug, Formatter, Result as FmtResult};
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 
 use prost::bytes::Bytes;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use spiffe_id::SpiffeId;
+use spiffe_proto::{JwtSvid as ProtoJwtSvid, X509Svid as ProtoX509Svid};
 
 use super::{InvalidDerError, SpiffeError, split_certificates};
-use crate::proto::{JwtSvid as ProtoJwtSvid, X509Svid as ProtoX509Svid};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct JwtSvid {

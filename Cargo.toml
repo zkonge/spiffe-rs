@@ -1,76 +1,29 @@
 [workspace]
-resolver = "2"
-members = ["spiffe-id"]
+resolver = "3"
+members = ["spiffe", "spiffe-id", "spiffe-proto"]
 
 [workspace.package]
 edition = "2024"
 
 [workspace.dependencies]
-thiserror = { version = "2.0.12", default-features = false }
-serde = { version = "1.0.219", default-features = false, features = ["alloc"] }
+spiffe = { path = "./spiffe" }
+spiffe-id = { path = "./spiffe-id" }
+spiffe-proto = { path = "./spiffe-proto" }
 
-[package]
-name = "spiffe"
-version = "0.0.0"
-edition.workspace = true
-
-[dependencies]
-spiffe-id = { path = "spiffe-id", optional = true }
-
-prost = "0.14.1"
-prost-types = "0.14.1"
-
-tonic = { version = "0.14.1", default-features = false, optional = true }
-tonic-prost = { version = "0.14.1", default-features = false, optional = true }
-futures-util = { version = "0.3.31", default-features = false, features = [
-    "alloc",
-], optional = true }
-http = { version = "1.3.1", optional = true }
-http-body = { version = "1.0.1", optional = true }
-
-# Used for the `wrapper` feature
-thiserror = { workspace = true, default-features = false, optional = true }
-rustls-pki-types = { version = "1.11.0", features = [
-    "alloc",
-], default-features = false, optional = true }
-tower-service = { version = "0.3.3", optional = true }
-serde_json = { version = "1.0.140", default-features = false, features = [
-    "alloc",
-], optional = true }
-serde = { workspace = true, features = [
-    "derive",
-], default-features = false, optional = true }
-base64ct = { version = "1.8.0", default-features = false, features = [
-    "alloc",
-], optional = true }
-
-[dev-dependencies]
-const-decoder = "0.4.0"
-
-[features]
-default = ["wrapper", "client", "jwt"]
-
-# high-level wrapper around the low-level workload APIs
-wrapper = ["dep:thiserror", "dep:rustls-pki-types", "dep:spiffe-id"]
-
-# enable JWT support in wrapper
-jwt = ["wrapper", "dep:base64ct", "dep:serde", "dep:serde_json"]
-
-# allow to create high-level types without checking the validation
-unchecked-api = []
-
-# client abstraction, without this, only basic types are available
-client = ["_grpc"]
-server = ["_grpc"]
-
-_grpc = [
-    "dep:tonic",
-    "dep:tonic-prost",
-    "dep:futures-util",
-    "dep:http",
-    "dep:http-body",
-    "dep:tower-service",
-]
+serde = { version = "1.0.228", default-features = false, features = ["alloc"] }
+base64ct = { version = "1.8.3", default-features = false }
+thiserror = { version = "2.0.18", default-features = false }
+const-decoder = { version = "0.4.0", default-features = false }
+futures-util = { version = "0.3.32", default-features = false }
+http = { version = "1.4.0", default-features = false }
+http-body = { version = "1.0.1", default-features = false }
+prost = { version = "0.14.3", default-features = false }
+prost-types = { version = "0.14.3", default-features = false }
+rustls-pki-types = { version = "1.14.0", default-features = false }
+serde_json = { version = "1.0.149", default-features = false }
+tonic = { version = "0.14.4", default-features = false }
+tonic-prost = { version = "0.14.4", default-features = false }
+tower-service = { version = "0.3.3", default-features = false }
 
 [profile.release]
 opt-level = "s"

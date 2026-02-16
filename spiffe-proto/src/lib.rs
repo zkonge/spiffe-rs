@@ -6,7 +6,7 @@ mod types;
 
 pub use types::*;
 
-#[cfg(any(feature = "client", feature = "server"))]
+type StdError = Box<dyn core::error::Error + Send + Sync + 'static>;
+
 const SPIFFE_METADATA_KEY: &str = "workload.spiffe.io";
-#[cfg(any(feature = "client", feature = "server"))]
 const SPIFFE_METADATA_VALUE: &str = "true";
