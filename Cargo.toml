@@ -1,6 +1,12 @@
 [workspace]
 resolver = "3"
-members = ["spiffe", "spiffe-id", "spiffe-proto", "spiffe-tls"]
+members = [
+    "spiffe",
+    "spiffe-id",
+    "spiffe-proto",
+    "spiffe-tls",
+    "spire-api-proto",
+]
 
 [workspace.package]
 edition = "2024"
