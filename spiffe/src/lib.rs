@@ -8,7 +8,7 @@ mod error;
 mod jwt;
 mod types;
 
-#[cfg(all(feature = "jwt"))]
+#[cfg(feature = "jwt")]
 pub use self::jwt::spiffe_id_from_jwt_svid_unchecked;
 pub use self::{
     der::{CertificateIter, spiffe_id_from_x509_svid_unchecked, split_certificates},

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["spiffe", "spiffe-id", "spiffe-proto"]
+members = ["spiffe", "spiffe-id", "spiffe-proto", "spiffe-tls"]
 
 [workspace.package]
 edition = "2024"
@@ -9,6 +9,7 @@ edition = "2024"
 spiffe = { path = "./spiffe" }
 spiffe-id = { path = "./spiffe-id" }
 spiffe-proto = { path = "./spiffe-proto" }
+spiffe-tls = { path = "./spiffe-tls" }
 
 serde = { version = "1.0.228", default-features = false, features = ["alloc"] }
 base64ct = { version = "1.8.3", default-features = false }
@@ -24,6 +25,9 @@ serde_json = { version = "1.0.149", default-features = false }
 tonic = { version = "0.14.4", default-features = false }
 tonic-prost = { version = "0.14.4", default-features = false }
 tower-service = { version = "0.3.3", default-features = false }
+rustls-webpki = { version = "0.103.9", default-features = false }
+tokio-rustls = { version = "0.26.4", default-features = false }
+upstre = { version = "0.0.0", git = "https://github.com/zkonge/upstre.git" }
 
 [profile.release]
 opt-level = "s"
