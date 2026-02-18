@@ -1,48 +1,36 @@
 use prost::Message;
 
 #[derive(Clone, PartialEq, Eq, Hash, Message)]
-pub struct Selector {
-    /// The type of the selector. This is typically the name of the plugin that
-    /// produces the selector.
-    #[prost(string, tag = "1")]
-    pub r#type: String,
+pub struct FederatesWithMatch {
+    /// The set of trust domain names to match on (e.g., "example.org").
+    #[prost(string, repeated, tag = "1")]
+    pub trust_domains: Vec<String>,
 
-    /// The value of the selector.
-    #[prost(string, tag = "2")]
-    pub value: String,
-}
-
-#[derive(Clone, PartialEq, Message)]
-pub struct SelectorMatch {
-    /// The set of selectors to match on.
-    #[prost(message, repeated, tag = "1")]
-    pub selectors: Vec<Selector>,
-
-    /// How to match the selectors.
-    #[prost(enumeration = "selector_match::MatchBehavior", tag = "2")]
+    /// How to match the trust domains.
+    #[prost(enumeration = "federates_with_match::MatchBehavior", tag = "2")]
     pub r#match: i32,
 }
 
-pub mod selector_match {
+pub mod federates_with_match {
     use prost::Enumeration;
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Enumeration)]
     #[repr(i32)]
     pub enum MatchBehavior {
-        /// Indicates that the selectors in this match are equal to the
-        /// candidate selectors, independent of ordering.
+        /// Indicates that the federated trust domains in this match are
+        /// equal to the candidate trust domains, independent of ordering.
         MatchExact = 0,
 
         /// Indicates that all candidates which have a non-empty subset
-        /// of the provided set of selectors will match.
+        /// of the provided set of trust domains will match.
         MatchSubset = 1,
 
         /// Indicates that all candidates which are a superset
-        /// of the provided selectors will match.
+        /// of the provided set of trust domains will match.
         MatchSuperset = 2,
 
         /// Indicates that all candidates which have at least one
-        /// of the provided set of selectors will match.
+        /// of the provided set of trust domains will match.
         MatchAny = 3,
     }
 

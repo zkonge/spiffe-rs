@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use prost::Message;
+use prost::{Message, bytes::Bytes};
 
 use crate::{JwtSvid, Selector, X509Svid};
 
@@ -12,8 +12,8 @@ pub struct X509SvidWithKey {
     pub x509_svid: Option<X509Svid>,
 
     /// Private key (encoding DER PKCS#8).
-    #[prost(bytes = "vec", tag = "2")]
-    pub x509_svid_key: Vec<u8>,
+    #[prost(bytes = "bytes", tag = "2")]
+    pub x509_svid_key: Bytes,
 }
 
 /// SubscribeToX509SVIDsRequest is used by clients to subscribe the set of SVIDs that
@@ -62,7 +62,7 @@ pub struct SubscribeToX509BundlesResponse {
     /// A map keyed by trust domain name, with ASN.1 DER-encoded
     /// X.509 CA certificates as the values
     #[prost(map = "string, bytes", tag = "1")]
-    pub ca_certificates: HashMap<String, Vec<u8>>,
+    pub ca_certificates: HashMap<String, Bytes>,
 }
 
 /// FetchJWTSVIDsRequest is used by clients to fetch a JWT-SVID for a workload.
@@ -113,5 +113,5 @@ pub struct SubscribeToJwtBundlesResponse {
     /// Required. JWK encoded JWT bundles, keyed by the SPIFFE ID of the trust
     /// domain.
     #[prost(map = "string, bytes", tag = "1")]
-    pub bundles: HashMap<String, Vec<u8>>,
+    pub bundles: HashMap<String, Bytes>,
 }

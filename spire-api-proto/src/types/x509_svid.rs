@@ -1,4 +1,4 @@
-use prost::Message;
+use prost::{Message, bytes::Bytes};
 
 use super::SpiffeId;
 
@@ -8,8 +8,8 @@ use super::SpiffeId;
 pub struct X509Svid {
     /// Certificate and intermediates required to form a chain of trust back to
     /// the X.509 authorities of the trust domain (ASN.1 DER encoded).
-    #[prost(bytes = "vec", repeated, tag = "1")]
-    pub cert_chain: Vec<Vec<u8>>,
+    #[prost(bytes = "bytes", repeated, tag = "1")]
+    pub cert_chain: Vec<Bytes>,
 
     /// SPIFFE ID of the SVID.
     #[prost(message, optional, tag = "2")]
