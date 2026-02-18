@@ -5,8 +5,7 @@ edition.workspace = true
 
 [dependencies]
 prost.workspace = true
-prost-types.workspace = true
-futures-util = { workspace = true, optional = true }
+futures-core = { workspace = true, optional = true }
 http = { workspace = true, optional = true }
 http-body = { workspace = true, optional = true }
 tonic = { workspace = true, optional = true }
@@ -14,13 +13,13 @@ tonic-prost = { workspace = true, optional = true }
 tower-service = { workspace = true, optional = true }
 
 [features]
-default = ["client"]
+default = ["client", "server"]
 
 client = ["_grpc"]
 server = ["_grpc", "dep:tower-service"]
 
 _grpc = [
-    "dep:futures-util",
+    "dep:futures-core",
     "dep:http",
     "dep:http-body",
     "dep:tonic-prost",

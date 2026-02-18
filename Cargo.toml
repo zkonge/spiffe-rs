@@ -16,11 +16,13 @@ spiffe = { path = "./spiffe" }
 spiffe-id = { path = "./spiffe-id" }
 spiffe-proto = { path = "./spiffe-proto" }
 spiffe-tls = { path = "./spiffe-tls" }
+spire-api-proto = { path = "./spire-api-proto" }
 
 serde = { version = "1.0.228", default-features = false, features = ["alloc"] }
 base64ct = { version = "1.8.3", default-features = false }
 thiserror = { version = "2.0.18", default-features = false }
 const-decoder = { version = "0.4.0", default-features = false }
+futures-core = { version = "0.3.32", default-features = false }
 futures-util = { version = "0.3.32", default-features = false }
 http = { version = "1.4.0", default-features = false }
 http-body = { version = "1.0.1", default-features = false }

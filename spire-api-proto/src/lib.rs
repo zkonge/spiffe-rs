@@ -1,4 +1,5 @@
 pub mod agent;
+mod macros;
 #[cfg(feature = "server")]
 pub(crate) mod service;
 mod types;
