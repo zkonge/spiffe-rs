@@ -25,9 +25,9 @@ const fn read_der_tlv(der: &[u8]) -> Option<(&[u8], Tlv<'_>)> {
     };
 
     let len: usize = match len_bytes {
-        [a] => u32::from_le_bytes([*a, 0, 0, 0]) as _,
-        [a, b] => u32::from_le_bytes([*b, *a, 0, 0]) as _,
-        [a, b, c] => u32::from_le_bytes([*c, *b, *a, 0]) as _,
+        [a] if *a > 0x7f => u32::from_le_bytes([*a, 0, 0, 0]) as _,
+        [a, b] if *a > 0x00 => u32::from_le_bytes([*b, *a, 0, 0]) as _,
+        [a, b, c] if *a > 0x00 => u32::from_le_bytes([*c, *b, *a, 0]) as _,
         // Is it possible to have a 16 MiB+ X.509 certificate in real world?
         _ => return None,
     };
@@ -100,7 +100,7 @@ const SAN_OID_ASN1_BYTES: [u8; 5] = [0x06, 0x03, 0x55, 0x1D, 0x11];
 
 /// Extracts SPIFFE ID from a trusted X.509 SVID
 ///
-/// It is assumed that the certificate is a trusted valid DER-encoded X.509 certificate.
+/// User must promise the certificate is a trusted valid DER-encoded X.509 certificate before using the result.
 ///
 /// Usually, this function is used to extract SPIFFE ID from a certificate that is already verified
 pub fn spiffe_id_from_x509_svid_unchecked(cert: &CertificateDer) -> Result<SpiffeId, SpiffeError> {
@@ -175,12 +175,12 @@ pub fn spiffe_id_from_x509_svid_unchecked(cert: &CertificateDer) -> Result<Spiff
     };
 
     // unpack the `extnValue`
-    let Some((_, (0x04, san_oct_string_value))) = read_der_tlv(extn_value) else {
+    let Some(([], (0x04, san_oct_string_value))) = read_der_tlv(extn_value) else {
         return Err(INVALID_DER);
     };
 
     // unpack the `OCTET STRING` value, it should contains a SEQUENCE
-    let Some((_, (0x30, san_values))) = read_der_tlv(san_oct_string_value) else {
+    let Some(([], (0x30, san_values))) = read_der_tlv(san_oct_string_value) else {
         return Err(INVALID_DER);
     };
     // begin to process `SAN` values
@@ -201,7 +201,7 @@ pub fn spiffe_id_from_x509_svid_unchecked(cert: &CertificateDer) -> Result<Spiff
                 }
             },
             Some((r, (_, _))) => r,
-            None => break,
+            None => return Err(INVALID_DER),
         };
     }
 
