@@ -123,3 +123,9 @@ impl TryFrom<spiffe_proto::JwtBundlesResponse> for JwtBundlesContext {
             .map(|bundles| JwtBundlesContext { bundles })
     }
 }
+
+impl From<JwtBundlesContext> for HashMap<TrustDomain<'static>, String> {
+    fn from(context: JwtBundlesContext) -> Self {
+        context.bundles
+    }
+}

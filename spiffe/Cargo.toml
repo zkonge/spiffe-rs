@@ -9,7 +9,7 @@ spiffe-id.workspace = true
 spiffe-proto = { workspace = true, features = ["client"] }
 
 thiserror.workspace = true
-futures-util.workspace = true
+futures-core.workspace = true
 tonic.workspace = true
 http.workspace = true
 http-body.workspace = true
