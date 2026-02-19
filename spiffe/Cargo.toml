@@ -19,7 +19,7 @@ rustls-pki-types = { workspace = true, features = ["alloc"] }
 
 # JWT dependencies
 serde_json = { workspace = true, features = ["alloc"], optional = true }
-serde = { workspace = true, features = ["derive"], optional = true }
+serde_core = { workspace = true, optional = true }
 base64ct = { workspace = true, features = ["alloc"], optional = true }
 
 [dev-dependencies]
@@ -27,7 +27,7 @@ const-decoder.workspace = true
 
 [features]
 # enable JWT support in wrapper
-jwt = ["dep:base64ct", "dep:serde", "dep:serde_json"]
+jwt = ["dep:base64ct", "dep:serde_core", "dep:serde_json"]
 
 # allow to create high-level types without checking the validation
 unchecked-api = []
