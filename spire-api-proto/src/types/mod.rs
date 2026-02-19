@@ -10,11 +10,12 @@ mod logger;
 mod selector;
 mod spiffe_id;
 mod status;
+mod well_known;
 mod wit_svid;
 mod x509_svid;
 
 pub use self::{
     agent::*, attestation::*, bundle::*, entry::*, federates_with::*, federation_relationship::*,
-    join_token::*, jwt_svid::*, logger::*, selector::*, spiffe_id::*, status::*, wit_svid::*,
-    x509_svid::*,
+    join_token::*, jwt_svid::*, logger::*, selector::*, spiffe_id::*, status::*, well_known::*,
+    wit_svid::*, x509_svid::*,
 };
