@@ -46,7 +46,7 @@ use crate::{SPIFFE_SCHEME, error::TrustDomainError, tri, validate_trust_domain};
 /// and is used to scope SPIFFE IDs and related resources.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 pub struct TrustDomain<'a> {
-    td: Cow<'a, str>,
+    pub td: Cow<'a, str>,
 }
 
 impl<'a> TrustDomain<'a> {
