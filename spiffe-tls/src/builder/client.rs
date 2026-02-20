@@ -108,11 +108,6 @@ impl<P, A> ClientConfigBuilder<P, SourceMissing, A> {
 
 impl<P, S> ClientConfigBuilder<P, S, Missing> {
     #[must_use]
-    pub fn allow_any_server(self) -> ClientConfigBuilder<P, S, Present> {
-        self.with_peer_policy(PeerAuthorizePolicy::AllowAny)
-    }
-
-    #[must_use]
     pub fn expect_server(self, server_id: SpiffeId) -> ClientConfigBuilder<P, S, Present> {
         self.with_peer_policy(PeerAuthorizePolicy::Exact(server_id))
     }

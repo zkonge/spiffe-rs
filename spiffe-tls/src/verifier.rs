@@ -21,7 +21,7 @@ pub(crate) struct SpiffeCertVerifier {
     material: Upstre<TlsMaterial>,
     supported_schemes: WebPkiSupportedAlgorithms,
     peer_spiffe_id_verifier: PeerAuthorizePolicy,
-    require_peer_cert_in_server_side: bool,
+    require_client_cert: bool,
 }
 
 impl SpiffeCertVerifier {
@@ -29,13 +29,13 @@ impl SpiffeCertVerifier {
         material: Upstre<TlsMaterial>,
         crypto_provider: Arc<CryptoProvider>,
         peer_spiffe_id_verifier: PeerAuthorizePolicy,
-        require_peer_cert_in_server_side: bool,
+        require_client_cert: bool,
     ) -> Self {
         Self {
             material,
             supported_schemes: crypto_provider.signature_verification_algorithms,
             peer_spiffe_id_verifier,
-            require_peer_cert_in_server_side,
+            require_client_cert,
         }
     }
 }
@@ -96,7 +96,7 @@ impl ClientCertVerifier for SpiffeCertVerifier {
     }
 
     fn client_auth_mandatory(&self) -> bool {
-        self.require_peer_cert_in_server_side
+        self.require_client_cert
     }
 }
 

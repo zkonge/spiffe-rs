@@ -12,8 +12,8 @@ use crate::{
     policy::PeerAuthorizePolicy, resolver::SpiffeCertResolver, verifier::SpiffeCertVerifier,
 };
 
-pub struct RequirePeerCertInServerSide;
-pub struct NoRequirePeerCertInServerSide;
+pub struct ClientAuthMandatory;
+pub struct ClientAuthOptional;
 
 pub struct ServerConfigBuilder<P = Missing, S = SourceMissing, A = Missing, R = Missing> {
     core: BuilderCore<P, S, A>,
@@ -46,9 +46,7 @@ impl<P, A, R> ServerConfigBuilder<P, SourceFromSvid, A, R> {
 
 impl<P, S> ServerConfigBuilder<P, S, Missing, Missing> {
     #[must_use]
-    pub fn with_require_peer_cert_in_server_side(
-        self,
-    ) -> ServerConfigBuilder<P, S, Missing, RequirePeerCertInServerSide> {
+    pub fn client_auth_mandatory(self) -> ServerConfigBuilder<P, S, Missing, ClientAuthMandatory> {
         ServerConfigBuilder {
             core: self.core,
             _require_peer_cert_state: PhantomData,
@@ -56,9 +54,7 @@ impl<P, S> ServerConfigBuilder<P, S, Missing, Missing> {
     }
 
     #[must_use]
-    pub fn without_require_peer_cert_in_server_side(
-        self,
-    ) -> ServerConfigBuilder<P, S, Missing, NoRequirePeerCertInServerSide> {
+    pub fn client_auth_optional(self) -> ServerConfigBuilder<P, S, Missing, ClientAuthOptional> {
         ServerConfigBuilder {
             core: BuilderCore {
                 crypto_provider: self.core.crypto_provider,
@@ -117,11 +113,11 @@ impl<P, A, R> ServerConfigBuilder<P, SourceMissing, A, R> {
     }
 }
 
-impl<P, S> ServerConfigBuilder<P, S, Missing, RequirePeerCertInServerSide> {
+impl<P, S> ServerConfigBuilder<P, S, Missing, ClientAuthMandatory> {
     #[must_use]
-    pub fn allow_any_client(
+    pub fn allow_any_authenticated_client(
         self,
-    ) -> ServerConfigBuilder<P, S, Present, RequirePeerCertInServerSide> {
+    ) -> ServerConfigBuilder<P, S, Present, ClientAuthMandatory> {
         self.with_peer_policy(PeerAuthorizePolicy::AllowAny)
     }
 
@@ -129,7 +125,7 @@ impl<P, S> ServerConfigBuilder<P, S, Missing, RequirePeerCertInServerSide> {
     pub fn expect_client(
         self,
         client_id: SpiffeId,
-    ) -> ServerConfigBuilder<P, S, Present, RequirePeerCertInServerSide> {
+    ) -> ServerConfigBuilder<P, S, Present, ClientAuthMandatory> {
         self.with_peer_policy(PeerAuthorizePolicy::Exact(client_id))
     }
 
@@ -137,14 +133,14 @@ impl<P, S> ServerConfigBuilder<P, S, Missing, RequirePeerCertInServerSide> {
     pub fn authorize_client_with(
         self,
         verifier: fn(&SpiffeId) -> bool,
-    ) -> ServerConfigBuilder<P, S, Present, RequirePeerCertInServerSide> {
+    ) -> ServerConfigBuilder<P, S, Present, ClientAuthMandatory> {
         self.with_peer_policy(PeerAuthorizePolicy::Dynamic(verifier))
     }
 
     fn with_peer_policy(
         self,
         peer_policy: PeerAuthorizePolicy,
-    ) -> ServerConfigBuilder<P, S, Present, RequirePeerCertInServerSide> {
+    ) -> ServerConfigBuilder<P, S, Present, ClientAuthMandatory> {
         ServerConfigBuilder {
             core: BuilderCore {
                 crypto_provider: self.core.crypto_provider,
@@ -158,7 +154,7 @@ impl<P, S> ServerConfigBuilder<P, S, Missing, RequirePeerCertInServerSide> {
     }
 }
 
-impl ServerConfigBuilder<Present, SourceFromSvid, Present, RequirePeerCertInServerSide> {
+impl ServerConfigBuilder<Present, SourceFromSvid, Present, ClientAuthMandatory> {
     pub async fn build(self) -> Result<ServerConfig, Error> {
         let crypto_provider = self
             .core
@@ -193,7 +189,7 @@ impl ServerConfigBuilder<Present, SourceFromSvid, Present, RequirePeerCertInServ
     }
 }
 
-impl<A> ServerConfigBuilder<Present, SourceFromSvid, A, NoRequirePeerCertInServerSide> {
+impl<A> ServerConfigBuilder<Present, SourceFromSvid, A, ClientAuthOptional> {
     pub async fn build(self) -> Result<ServerConfig, Error> {
         let crypto_provider = self
             .core
