@@ -14,7 +14,8 @@ pub struct Bundle {
     #[prost(message, repeated, tag = "3")]
     pub jwt_authorities: Vec<JwtKey>,
 
-    /// A hint on how often the bundle should be refreshed from the bundle provider, in seconds.
+    /// A hint on how often the bundle should be refreshed from the bundle
+    /// provider, in seconds. Can be zero (meaning no hint available).
     #[prost(int64, tag = "4")]
     pub refresh_hint: i64,
 

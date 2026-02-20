@@ -12,11 +12,17 @@ pub struct Entry {
     #[prost(message, optional, tag = "2")]
     pub spiffe_id: Option<SpiffeId>,
 
-    /// Who the entry is delegated to.
+    /// Who the entry is delegated to. If the entry describes a node, this is
+    /// set to the SPIFFE ID of the SPIRE server of the trust domain (e.g.
+    /// spiffe://example.org/spire/server). Otherwise, it will be set to a node
+    /// SPIFFE ID.
     #[prost(message, optional, tag = "3")]
     pub parent_id: Option<SpiffeId>,
 
-    /// The selectors which identify which entities match this entry.
+    /// The selectors which identify which entities match this entry. If this is
+    /// an entry for a node, these selectors represent selectors produced by
+    /// node attestation. Otherwise, these selectors represent those produced by
+    /// workload attestation.
     #[prost(message, repeated, tag = "4")]
     pub selectors: Vec<Selector>,
 
@@ -28,11 +34,16 @@ pub struct Entry {
     #[prost(string, repeated, tag = "6")]
     pub federates_with: Vec<String>,
 
-    /// Whether or not the identity described by this entry is an administrative workload.
+    /// Whether or not the identity described by this entry is an administrative
+    /// workload. Administrative workloads are granted additional access to
+    /// various managerial server APIs, such as entry registration.
     #[prost(bool, tag = "7")]
     pub admin: bool,
 
-    /// Whether or not the identity described by this entry represents a downstream SPIRE server.
+    /// Whether or not the identity described by this entry represents a
+    /// downstream SPIRE server. Downstream SPIRE servers have additional access
+    /// to various signing APIs, such as those used to sign X.509 CA
+    /// certificates and publish JWT signing keys.
     #[prost(bool, tag = "8")]
     pub downstream: bool,
 
@@ -56,7 +67,8 @@ pub struct Entry {
     #[prost(int32, tag = "13")]
     pub jwt_svid_ttl: i32,
 
-    /// An operator-specified hint to guide workload identity selection.
+    /// An operator-specified string used to provide guidance on how this
+    /// identity should be used by a workload when more than one SVID is returned.
     #[prost(string, tag = "14")]
     pub hint: String,
 

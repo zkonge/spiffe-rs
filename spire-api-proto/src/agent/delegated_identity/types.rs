@@ -46,6 +46,7 @@ pub struct SubscribeToX509SvidsRequest {
 pub struct SubscribeToX509SvidsResponse {
     #[prost(message, repeated, tag = "1")]
     pub x509_svids: Vec<X509SvidWithKey>,
+
     /// Names of the trust domains that this workload should federates with.
     #[prost(string, repeated, tag = "2")]
     pub federates_with: Vec<String>,

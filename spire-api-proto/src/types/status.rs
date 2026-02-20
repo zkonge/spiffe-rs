@@ -11,13 +11,6 @@ pub struct Status {
     pub message: String,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Message)]
-pub struct PermissionDeniedDetails {
-    /// The reason for permission denied.
-    #[prost(enumeration = "permission_denied_details::Reason", tag = "1")]
-    pub reason: i32,
-}
-
 pub mod permission_denied_details {
     use prost::Enumeration;
 
@@ -62,4 +55,10 @@ pub mod permission_denied_details {
             }
         }
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Message)]
+pub struct PermissionDeniedDetails {
+    #[prost(enumeration = "permission_denied_details::Reason", tag = "1")]
+    pub reason: i32,
 }

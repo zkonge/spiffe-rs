@@ -9,12 +9,27 @@ prost-types.workspace = true
 futures-core = { workspace = true, optional = true }
 http = { workspace = true, optional = true }
 http-body = { workspace = true, optional = true }
-tonic = { workspace = true, optional = true }
+tonic = { workspace = true, optional = true, default-features = false }
 tonic-prost = { workspace = true, optional = true }
 tower-service = { workspace = true, optional = true }
 
 [features]
-default = ["client", "server"]
+default = ["client"]
+
+# build agent related api stubs
+agent-debug = []
+agent-delegated-identity = []
+agent-logger = []
+
+# build server related api stubs
+server-agent = []
+server-bundle = []
+server-debug = []
+server-entry = []
+server-local-authority = []
+server-logger = []
+server-svid = []
+server-trust-domain = []
 
 client = ["_grpc"]
 server = ["_grpc", "dep:tower-service"]

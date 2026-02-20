@@ -1,5 +1,16 @@
-mod client;
-mod grpc;
-mod server;
+#![allow(unused_imports, unused_macros)]
 
-pub(crate) use self::{client::define_client, grpc::define_grpc, server::define_server};
+#[cfg(feature = "client")]
+mod client;
+#[cfg(feature = "client")]
+pub(crate) use self::client::define_client;
+
+#[cfg(feature = "server")]
+mod server;
+#[cfg(feature = "server")]
+pub(crate) use self::server::define_server;
+
+#[cfg(any(feature = "server", feature = "client"))]
+mod grpc;
+#[cfg(any(feature = "server", feature = "client"))]
+pub(crate) use self::grpc::define_grpc;

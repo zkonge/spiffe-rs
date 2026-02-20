@@ -1,16 +1,5 @@
 use prost::Message;
 
-#[derive(Clone, PartialEq, Eq, Hash, Message)]
-pub struct FederatesWithMatch {
-    /// The set of trust domain names to match on (e.g., "example.org").
-    #[prost(string, repeated, tag = "1")]
-    pub trust_domains: Vec<String>,
-
-    /// How to match the trust domains.
-    #[prost(enumeration = "federates_with_match::MatchBehavior", tag = "2")]
-    pub r#match: i32,
-}
-
 pub mod federates_with_match {
     use prost::Enumeration;
 
@@ -54,4 +43,15 @@ pub mod federates_with_match {
             }
         }
     }
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Message)]
+pub struct FederatesWithMatch {
+    /// The set of trust domain names to match on (e.g., "example.org").
+    #[prost(string, repeated, tag = "1")]
+    pub trust_domains: Vec<String>,
+
+    /// How to match the trust domains.
+    #[prost(enumeration = "federates_with_match::MatchBehavior", tag = "2")]
+    pub r#match: i32,
 }

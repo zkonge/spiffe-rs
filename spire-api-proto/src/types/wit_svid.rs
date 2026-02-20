@@ -24,6 +24,8 @@ pub struct WitSvid {
 
     /// Optional. An operator-specified string used to provide guidance on how this
     /// identity should be used by a workload when more than one SVID is returned.
+    /// For example, `internal` and `external` to indicate an SVID for internal or
+    /// external use, respectively.
     #[prost(string, tag = "5")]
     pub hint: String,
 }

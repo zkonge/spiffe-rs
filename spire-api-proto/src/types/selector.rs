@@ -12,17 +12,6 @@ pub struct Selector {
     pub value: String,
 }
 
-#[derive(Clone, PartialEq, Message)]
-pub struct SelectorMatch {
-    /// The set of selectors to match on.
-    #[prost(message, repeated, tag = "1")]
-    pub selectors: Vec<Selector>,
-
-    /// How to match the selectors.
-    #[prost(enumeration = "selector_match::MatchBehavior", tag = "2")]
-    pub r#match: i32,
-}
-
 pub mod selector_match {
     use prost::Enumeration;
 
@@ -66,4 +55,15 @@ pub mod selector_match {
             }
         }
     }
+}
+
+#[derive(Clone, PartialEq, Message)]
+pub struct SelectorMatch {
+    /// The set of selectors to match on.
+    #[prost(message, repeated, tag = "1")]
+    pub selectors: Vec<Selector>,
+
+    /// How to match the selectors.
+    #[prost(enumeration = "selector_match::MatchBehavior", tag = "2")]
+    pub r#match: i32,
 }
