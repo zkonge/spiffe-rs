@@ -16,7 +16,7 @@ use tokio_rustls::rustls::{
     pki_types::{CertificateDer, PrivateKeyDer},
     sign::CertifiedKey,
 };
-use upstre::{Upstre, UpstreBuilder};
+use upstre::{Upstre, UpstreBuilder, UpstreError};
 use webpki::{CertRevocationList, OwnedCertRevocationList, anchor_from_trusted_cert};
 
 pub use self::{client::ClientConfigBuilder, server::ServerConfigBuilder};
@@ -215,9 +215,9 @@ fn display_error(error: impl Display) -> Error {
     Error::General(error.to_string())
 }
 
-fn map_upstre_error(error: upstre::Error<Error>) -> Error {
+fn map_upstre_error(error: UpstreError<Error>) -> Error {
     match error {
-        upstre::Error::Error(error) => error,
-        upstre::Error::EndOfStream => Error::General("SPIFFE TLS material stream ended".into()),
+        UpstreError::Stream(error) => error,
+        UpstreError::EndOfStream => Error::General("SPIFFE TLS material stream ended".into()),
     }
 }
