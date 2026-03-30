@@ -3,11 +3,11 @@ mod server;
 
 use std::{collections::HashMap, fmt::Display, future::Future, marker::PhantomData, sync::Arc};
 
-use futures_util::{StreamExt, future::BoxFuture, stream::BoxStream};
+use futures_util::{Stream, StreamExt, future::BoxFuture, stream::BoxStream};
 use rustls_pki_types::{CertificateRevocationListDer, TrustAnchor};
 use spiffe::{
     X509Bundle, X509Svid,
-    client::{X509BundlesContextStream, X509SvidContextStream},
+    client::{X509BundlesContext, X509SvidContext},
 };
 use spiffe_id::TrustDomain;
 use tokio_rustls::rustls::{
@@ -26,8 +26,11 @@ type SourceFuture<S> = BoxFuture<'static, Result<S, Error>>;
 type SourceMaker<S> = Arc<dyn Fn() -> SourceFuture<S> + Send + Sync>;
 type SvidSelector = fn(&X509Svid) -> bool;
 
-type SvidStreamMaker = SourceMaker<X509SvidContextStream>;
-type BundleStreamMaker = SourceMaker<X509BundlesContextStream>;
+type SvidContextStream = BoxStream<'static, X509SvidContext>;
+type BundleContextStream = BoxStream<'static, X509BundlesContext>;
+
+type SvidStreamMaker = SourceMaker<SvidContextStream>;
+type BundleStreamMaker = SourceMaker<BundleContextStream>;
 
 #[derive(Clone)]
 pub(super) enum MaterialSource {
@@ -58,31 +61,41 @@ pub(super) struct BuilderCore<P, S, A> {
     pub(super) _state: PhantomData<(P, S, A)>,
 }
 
-pub(super) fn make_svid_stream_maker<MakeSvid, FutSvid, ESvid>(
+pub(super) fn make_svid_stream_maker<MakeSvid, FutSvid, SvidStream, ESvid>(
     make_svid_stream: MakeSvid,
 ) -> SvidStreamMaker
 where
     MakeSvid: Fn() -> FutSvid + Send + Sync + 'static,
-    FutSvid: Future<Output = Result<X509SvidContextStream, ESvid>> + Send + 'static,
+    FutSvid: Future<Output = Result<SvidStream, ESvid>> + Send + 'static,
+    SvidStream: Stream<Item = X509SvidContext> + Send + 'static,
     ESvid: Display,
 {
     Arc::new(move || {
         let fut = make_svid_stream();
-        Box::pin(async move { fut.await.map_err(display_error) })
+        Box::pin(async move {
+            fut.await
+                .map(|stream| Box::pin(stream) as SvidContextStream)
+                .map_err(display_error)
+        })
     })
 }
 
-pub(super) fn make_bundle_stream_maker<MakeBundles, FutBundles, EBundle>(
+pub(super) fn make_bundle_stream_maker<MakeBundles, FutBundles, BundleStream, EBundle>(
     make_bundles_stream: MakeBundles,
 ) -> BundleStreamMaker
 where
     MakeBundles: Fn() -> FutBundles + Send + Sync + 'static,
-    FutBundles: Future<Output = Result<X509BundlesContextStream, EBundle>> + Send + 'static,
+    FutBundles: Future<Output = Result<BundleStream, EBundle>> + Send + 'static,
+    BundleStream: Stream<Item = X509BundlesContext> + Send + 'static,
     EBundle: Display,
 {
     Arc::new(move || {
         let fut = make_bundles_stream();
-        Box::pin(async move { fut.await.map_err(display_error) })
+        Box::pin(async move {
+            fut.await
+                .map(|stream| Box::pin(stream) as BundleContextStream)
+                .map_err(display_error)
+        })
     })
 }
 
@@ -120,11 +133,14 @@ pub(super) async fn build_material_stream(
         .map_err(map_upstre_error)
 }
 
-fn material_stream_from_svid_contexts(
-    svid_stream: X509SvidContextStream,
+fn material_stream_from_svid_contexts<S>(
+    svid_stream: S,
     crypto_provider: Arc<CryptoProvider>,
     svid_selector: SvidSelector,
-) -> BoxStream<'static, Result<TlsMaterial, Error>> {
+) -> BoxStream<'static, Result<TlsMaterial, Error>>
+where
+    S: Stream<Item = X509SvidContext> + Send + 'static,
+{
     Box::pin(svid_stream.map(move |svid_context| {
         let identity = svid_context
             .svids
@@ -153,9 +169,12 @@ fn material_stream_from_svid_contexts(
     }))
 }
 
-fn material_stream_from_bundle_contexts(
-    bundles_stream: X509BundlesContextStream,
-) -> BoxStream<'static, Result<TlsMaterial, Error>> {
+fn material_stream_from_bundle_contexts<S>(
+    bundles_stream: S,
+) -> BoxStream<'static, Result<TlsMaterial, Error>>
+where
+    S: Stream<Item = X509BundlesContext> + Send + 'static,
+{
     Box::pin(bundles_stream.map(|bundles_context| {
         Ok(TlsMaterial {
             trust_anchors: trust_anchors_from_bundles(bundles_context.bundles.clone())?,

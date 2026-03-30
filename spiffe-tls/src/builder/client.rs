@@ -1,6 +1,7 @@
 use std::{fmt::Display, future::Future, sync::Arc};
 
-use spiffe::client::{X509BundlesContextStream, X509SvidContextStream};
+use futures_util::Stream;
+use spiffe::client::{X509BundlesContext, X509SvidContext};
 use spiffe_id::SpiffeId;
 use tokio_rustls::rustls::{ClientConfig, Error, crypto::CryptoProvider, version};
 
@@ -60,13 +61,14 @@ impl<S, A> ClientConfigBuilder<Missing, S, A> {
 
 impl<P, A> ClientConfigBuilder<P, SourceMissing, A> {
     #[must_use]
-    pub fn with_x509_svid_stream<MakeSvid, FutSvid, ESvid>(
+    pub fn with_x509_svid_stream<MakeSvid, FutSvid, SvidStream, ESvid>(
         self,
         make_svid_stream: MakeSvid,
     ) -> ClientConfigBuilder<P, SourceFromSvid, A>
     where
         MakeSvid: Fn() -> FutSvid + Send + Sync + 'static,
-        FutSvid: Future<Output = Result<X509SvidContextStream, ESvid>> + Send + 'static,
+        FutSvid: Future<Output = Result<SvidStream, ESvid>> + Send + 'static,
+        SvidStream: Stream<Item = X509SvidContext> + Send + 'static,
         ESvid: Display,
     {
         ClientConfigBuilder {
@@ -83,13 +85,14 @@ impl<P, A> ClientConfigBuilder<P, SourceMissing, A> {
     }
 
     #[must_use]
-    pub fn with_x509_bundle_stream<MakeBundles, FutBundles, EBundle>(
+    pub fn with_x509_bundle_stream<MakeBundles, FutBundles, BundleStream, EBundle>(
         self,
         make_bundles_stream: MakeBundles,
     ) -> ClientConfigBuilder<P, SourceFromBundle, A>
     where
         MakeBundles: Fn() -> FutBundles + Send + Sync + 'static,
-        FutBundles: Future<Output = Result<X509BundlesContextStream, EBundle>> + Send + 'static,
+        FutBundles: Future<Output = Result<BundleStream, EBundle>> + Send + 'static,
+        BundleStream: Stream<Item = X509BundlesContext> + Send + 'static,
         EBundle: Display,
     {
         ClientConfigBuilder {

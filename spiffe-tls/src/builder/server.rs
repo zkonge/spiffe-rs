@@ -1,6 +1,7 @@
 use std::{fmt::Display, future::Future, marker::PhantomData, sync::Arc};
 
-use spiffe::client::X509SvidContextStream;
+use futures_util::Stream;
+use spiffe::client::X509SvidContext;
 use spiffe_id::SpiffeId;
 use tokio_rustls::rustls::{Error, ServerConfig, crypto::CryptoProvider, version};
 
@@ -89,13 +90,14 @@ impl<S, A, R> ServerConfigBuilder<Missing, S, A, R> {
 
 impl<P, A, R> ServerConfigBuilder<P, SourceMissing, A, R> {
     #[must_use]
-    pub fn with_x509_svid_stream<MakeSvid, FutSvid, ESvid>(
+    pub fn with_x509_svid_stream<MakeSvid, FutSvid, SvidStream, ESvid>(
         self,
         make_svid_stream: MakeSvid,
     ) -> ServerConfigBuilder<P, SourceFromSvid, A, R>
     where
         MakeSvid: Fn() -> FutSvid + Send + Sync + 'static,
-        FutSvid: Future<Output = Result<X509SvidContextStream, ESvid>> + Send + 'static,
+        FutSvid: Future<Output = Result<SvidStream, ESvid>> + Send + 'static,
+        SvidStream: Stream<Item = X509SvidContext> + Send + 'static,
         ESvid: Display,
     {
         ServerConfigBuilder {
