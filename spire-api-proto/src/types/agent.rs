@@ -31,6 +31,10 @@ pub struct Agent {
     /// Output only. Whether or not the agent can re-attest.
     #[prost(bool, tag = "7")]
     pub can_reattest: bool,
+
+    /// Output only. Optional. The version of the agent.
+    #[prost(string, tag = "8")]
+    pub agent_version: String,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Message)]
@@ -58,4 +62,8 @@ pub struct AgentMask {
     /// can_reattest field mask
     #[prost(bool, tag = "7")]
     pub can_reattest: bool,
+
+    /// agent_version field mask
+    #[prost(bool, tag = "8")]
+    pub agent_version: bool,
 }

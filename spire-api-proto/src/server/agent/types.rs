@@ -254,6 +254,10 @@ pub struct PostStatusRequest {
     /// Required. Serial number of the bundle currently being served by the agent
     #[prost(uint64, tag = "1")]
     pub current_bundle_serial: u64,
+
+    /// Optional. The version of the agent.
+    #[prost(string, tag = "2")]
+    pub agent_version: String,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Message)]
