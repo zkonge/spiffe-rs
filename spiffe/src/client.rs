@@ -88,7 +88,7 @@ where
     ) -> Result<Vec<JwtSvid>> {
         let request = spiffe_proto::JwtSvidRequest {
             audience: iter::once(audience.into())
-                .chain(more_audiences.into().into_iter())
+                .chain(more_audiences.into())
                 .collect(),
             spiffe_id: spiffe_id.unwrap_or_default(),
         };
