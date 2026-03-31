@@ -2,7 +2,7 @@ use prost::Message;
 
 use crate::{Entry, EntryMask};
 
-pub mod count_entries_response {
+pub mod count_entries_request {
     use prost::Message;
 
     use crate::{FederatesWithMatch, SelectorMatch, SpiffeId};
@@ -33,7 +33,7 @@ pub mod count_entries_response {
 pub struct CountEntriesRequest {
     /// Filters the entries returned in the response.
     #[prost(message, optional, tag = "1")]
-    pub filter: Option<count_entries_response::Filter>,
+    pub filter: Option<count_entries_request::Filter>,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Message)]

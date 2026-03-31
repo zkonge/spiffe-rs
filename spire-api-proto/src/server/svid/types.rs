@@ -41,6 +41,11 @@ pub struct MintWitSvidRequest {
     /// Server CA.
     #[prost(int32, tag = "3")]
     pub ttl: i32,
+
+    /// Required. The signing algorithm to specify in the key. This must be one
+    /// of the values supported by the WIT-SVID specification.
+    #[prost(string, tag = "4")]
+    pub signing_algorithm: String,
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -208,4 +213,9 @@ pub struct NewWitSvidParams {
     /// Required. The ASN.1 DER encoded public key.
     #[prost(bytes = "vec", tag = "2")]
     pub public_key: Vec<u8>,
+
+    /// Required. The signing algorithm to specify in the key. This must be one
+    /// of the values supported by the WIT-SVID specification.
+    #[prost(string, tag = "3")]
+    pub signing_algorithm: String,
 }

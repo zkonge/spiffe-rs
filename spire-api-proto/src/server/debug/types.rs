@@ -4,7 +4,7 @@ use prost::Message;
 pub struct GetInfoRequest {}
 
 pub mod get_info_response {
-    use prost::{Message, bytes::Bytes};
+    use prost::Message;
 
     use crate::SpiffeId;
 
@@ -15,12 +15,12 @@ pub mod get_info_response {
         pub id: Option<SpiffeId>,
 
         /// Expiration time
-        #[prost(bytes, tag = "2")]
-        pub cert: Bytes,
+        #[prost(int64, tag = "2")]
+        pub expires_at: i64,
 
         /// Subject
-        #[prost(bytes, tag = "3")]
-        pub key: Bytes,
+        #[prost(string, tag = "3")]
+        pub subject: String,
     }
 }
 
