@@ -4,11 +4,11 @@ use std::{
 };
 
 use http::{Response as HttpResponse, header::CONTENT_TYPE};
-use tonic::{Code, Result, Status, body::Body as TonicBody, metadata::GRPC_CONTENT_TYPE};
+use tonic::{Code, Status, body::Body as TonicBody, metadata::GRPC_CONTENT_TYPE};
 use tower_service::Service;
 
 #[derive(Clone)]
-pub(crate) struct SvcFn<F>(pub F);
+pub struct SvcFn<F>(pub F);
 
 impl<F, Fut, ReqTy, RespTy, E> Service<ReqTy> for SvcFn<F>
 where
@@ -28,7 +28,7 @@ where
     }
 }
 
-pub(crate) fn unimplemented() -> HttpResponse<TonicBody> {
+pub fn grpc_unimplemented() -> HttpResponse<TonicBody> {
     let mut response = HttpResponse::new(TonicBody::empty());
     let headers = response.headers_mut();
     headers.insert(Status::GRPC_STATUS, (Code::Unimplemented as i32).into());

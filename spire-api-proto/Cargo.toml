@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 prost.workspace = true
 prost-types.workspace = true
+tonic-service = { workspace = true, optional = true }
 futures-core = { workspace = true, optional = true }
 http = { workspace = true, optional = true }
 http-body = { workspace = true, optional = true }
@@ -35,6 +36,7 @@ client = ["_grpc"]
 server = ["_grpc", "dep:tower-service"]
 
 _grpc = [
+    "dep:tonic-service",
     "dep:futures-core",
     "dep:http",
     "dep:http-body",

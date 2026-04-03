@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! define_server {
     (
         $(#[$server_attr:meta])*
@@ -11,7 +12,7 @@ macro_rules! define_server {
     ) => {
         pub trait $trait_name: Send + Sync + 'static {
             $(
-                crate::macros::define_server! {
+                $crate::define_server! {
                     @trait_item
                     $(#[$method_attr])*
                     $method,
@@ -22,7 +23,7 @@ macro_rules! define_server {
             )*
         }
 
-        crate::macros::define_server! {
+        $crate::define_server! {
             @server
             $(#[$server_attr])*
             $server_name,
@@ -66,11 +67,11 @@ macro_rules! define_server {
             pub fn with_interceptor<F>(
                 inner: std::sync::Arc<T>,
                 interceptor: F,
-            ) -> tonic::service::interceptor::InterceptedService<Self, F>
+            ) -> $crate::tonic::service::interceptor::InterceptedService<Self, F>
             where
-                F: tonic::service::Interceptor,
+                F: $crate::tonic::service::Interceptor,
             {
-                tonic::service::interceptor::InterceptedService::new(
+                $crate::tonic::service::interceptor::InterceptedService::new(
                     Self::from_arc(inner),
                     interceptor,
                 )
@@ -96,12 +97,12 @@ macro_rules! define_server {
 
             #[inline]
             #[must_use]
-            fn grpc<U, V>(&self) -> tonic::server::Grpc<tonic_prost::ProstCodec<U, V>>
+            fn grpc<U, V>(&self) -> $crate::tonic::server::Grpc<$crate::tonic_prost::ProstCodec<U, V>>
             where
-                U: prost::Message + 'static,
-                V: prost::Message + Default + 'static,
+                U: $crate::prost::Message + 'static,
+                V: $crate::prost::Message + Default + 'static,
             {
-                tonic::server::Grpc::new(tonic_prost::ProstCodec::new()).apply_max_message_size_config(
+                $crate::tonic::server::Grpc::new($crate::tonic_prost::ProstCodec::new()).apply_max_message_size_config(
                     self.max_decoding_message_size,
                     self.max_encoding_message_size,
                 )
@@ -110,19 +111,19 @@ macro_rules! define_server {
             #[must_use]
             pub fn into_service<B>(
                 self,
-            ) -> impl tower_service::Service<
-                http::Request<B>,
-                Response = http::Response<tonic::body::Body>,
+            ) -> impl $crate::tower_service::Service<
+                $crate::http::Request<B>,
+                Response = $crate::http::Response<$crate::tonic::body::Body>,
                 Error = std::convert::Infallible,
                 Future = impl Future<
-                    Output = Result<http::Response<tonic::body::Body>, std::convert::Infallible>,
+                    Output = Result<$crate::http::Response<$crate::tonic::body::Body>, std::convert::Infallible>,
                 > + Send,
             > + Clone
             where
-                B: http_body::Body + Send + 'static,
-                B::Error: Into<crate::StdError> + Send + 'static,
+                B: $crate::http_body::Body + Send + 'static,
+                B::Error: Into<$crate::StdError> + Send + 'static,
             {
-                crate::service::SvcFn(move |req: http::Request<B>| {
+                $crate::SvcFn(move |req: $crate::http::Request<B>| {
                     let server = self.clone();
                     async move {
                         let inner = &*server.inner;
@@ -130,7 +131,7 @@ macro_rules! define_server {
                         let resp = match req.uri().path().strip_prefix(concat!("/", $service_name, "/")) {
                             $(
                                 Some($method_name) => {
-                                    crate::macros::define_server! {
+                                    $crate::define_server! {
                                         @route
                                         server,
                                         inner,
@@ -142,7 +143,7 @@ macro_rules! define_server {
                                     }
                                 }
                             )*
-                            _ => crate::service::unimplemented(),
+                            _ => $crate::grpc_unimplemented(),
                         };
 
                         Ok(resp)
@@ -162,7 +163,7 @@ macro_rules! define_server {
             }
         }
 
-        impl<T> tonic::server::NamedService for $server_name<T> {
+        impl<T> $crate::tonic::server::NamedService for $server_name<T> {
             const NAME: &'static str = $service_name;
         }
     };
@@ -177,7 +178,7 @@ macro_rules! define_server {
         ($request_ty:ty),
         ($response_ty:ty)
     ) => {{
-        let s = crate::service::SvcFn(|req| $inner.$method(req));
+        let s = $crate::SvcFn(|req| $inner.$method(req));
         $server.grpc().unary(s, $req).await
     }};
 
@@ -191,7 +192,7 @@ macro_rules! define_server {
         ($request_ty:ty),
         (stream $response_ty:ty)
     ) => {{
-        let s = crate::service::SvcFn(|req| $inner.$method(req));
+        let s = $crate::SvcFn(|req| $inner.$method(req));
         $server.grpc().server_streaming(s, $req).await
     }};
 
@@ -205,7 +206,7 @@ macro_rules! define_server {
         (stream $request_ty:ty),
         ($response_ty:ty)
     ) => {{
-        let s = crate::service::SvcFn(|req| $inner.$method(req));
+        let s = $crate::SvcFn(|req| $inner.$method(req));
         $server.grpc().client_streaming(s, $req).await
     }};
 
@@ -219,7 +220,7 @@ macro_rules! define_server {
         (stream $request_ty:ty),
         (stream $response_ty:ty)
     ) => {{
-        let s = crate::service::SvcFn(|req| $inner.$method(req));
+        let s = $crate::SvcFn(|req| $inner.$method(req));
         $server.grpc().streaming(s, $req).await
     }};
 
@@ -233,8 +234,8 @@ macro_rules! define_server {
         $(#[$method_attr])*
         fn $method(
             &self,
-            req: tonic::Request<$request_ty>,
-        ) -> impl Future<Output = tonic::Result<tonic::Response<$response_ty>>> + Send;
+            req: $crate::tonic::Request<$request_ty>,
+        ) -> impl Future<Output = $crate::tonic::Result<$crate::tonic::Response<$response_ty>>> + Send;
     };
 
     (
@@ -247,8 +248,8 @@ macro_rules! define_server {
         $(#[$method_attr])*
         fn $method(
             &self,
-            req: tonic::Request<tonic::Streaming<$request_ty>>,
-        ) -> impl Future<Output = tonic::Result<tonic::Response<$response_ty>>> + Send;
+            req: $crate::tonic::Request<$crate::tonic::Streaming<$request_ty>>,
+        ) -> impl Future<Output = $crate::tonic::Result<$crate::tonic::Response<$response_ty>>> + Send;
     };
 
     (
@@ -260,13 +261,13 @@ macro_rules! define_server {
         as $stream_name:ident
     ) => {
         $(#[$method_attr])*
-        type $stream_name: futures_core::Stream<Item = tonic::Result<$response_ty>> + Send;
+        type $stream_name: $crate::futures_core::Stream<Item = $crate::tonic::Result<$response_ty>> + Send;
 
         $(#[$method_attr])*
         fn $method(
             &self,
-            req: tonic::Request<$request_ty>,
-        ) -> impl Future<Output = tonic::Result<tonic::Response<Self::$stream_name>>> + Send;
+            req: $crate::tonic::Request<$request_ty>,
+        ) -> impl Future<Output = $crate::tonic::Result<$crate::tonic::Response<Self::$stream_name>>> + Send;
     };
 
     (
@@ -278,14 +279,12 @@ macro_rules! define_server {
         as $stream_name:ident
     ) => {
         $(#[$method_attr])*
-        type $stream_name: futures_core::Stream<Item = tonic::Result<$response_ty>> + Send;
+        type $stream_name: $crate::futures_core::Stream<Item = $crate::tonic::Result<$response_ty>> + Send;
 
         $(#[$method_attr])*
         fn $method(
             &self,
-            req: tonic::Request<tonic::Streaming<$request_ty>>,
-        ) -> impl Future<Output = tonic::Result<tonic::Response<Self::$stream_name>>> + Send;
+            req: $crate::tonic::Request<$crate::tonic::Streaming<$request_ty>>,
+        ) -> impl Future<Output = $crate::tonic::Result<$crate::tonic::Response<Self::$stream_name>>> + Send;
     };
 }
-
-pub(crate) use define_server;

@@ -1,7 +1,9 @@
 mod types;
 
+use tonic_service::define_grpc;
+
 pub use self::types::*;
-use crate::{FederationRelationship, macros::define_grpc};
+use crate::FederationRelationship;
 
 define_grpc! {
     /// Manages the federation relationships with foreign trust domains.

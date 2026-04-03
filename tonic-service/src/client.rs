@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! define_client {
     (
         $(#[$client_attr:meta])*
@@ -11,18 +12,18 @@ macro_rules! define_client {
         $(#[$client_attr])*
         #[derive(Debug, Clone)]
         pub struct $client_name<T> {
-            inner: tonic::client::Grpc<T>,
+            inner: $crate::tonic::client::Grpc<T>,
         }
 
         impl<T> $client_name<T>
         where
-            T: tonic::client::GrpcService<tonic::body::Body>,
-            T::Error: Into<crate::StdError>,
-            T::ResponseBody: http_body::Body<Data = prost::bytes::Bytes> + Send + 'static,
-            <T::ResponseBody as http_body::Body>::Error: Into<crate::StdError> + Send,
+            T: $crate::tonic::client::GrpcService<$crate::tonic::body::Body>,
+            T::Error: Into<$crate::StdError>,
+            T::ResponseBody: $crate::http_body::Body<Data = $crate::prost::bytes::Bytes> + Send + 'static,
+            <T::ResponseBody as $crate::http_body::Body>::Error: Into<$crate::StdError> + Send,
         {
-            pub fn with_origin(inner: T, origin: http::uri::Uri) -> Self {
-                let inner = tonic::client::Grpc::with_origin(inner, origin);
+            pub fn with_origin(inner: T, origin: $crate::http::uri::Uri) -> Self {
+                let inner = $crate::tonic::client::Grpc::with_origin(inner, origin);
                 Self { inner }
             }
 
@@ -45,19 +46,19 @@ macro_rules! define_client {
             }
 
             #[inline]
-            fn ready(&mut self) -> impl Future<Output = tonic::Result<()>> + use<'_, T> {
+            fn ready(&mut self) -> impl Future<Output = $crate::tonic::Result<()>> + use<'_, T> {
                 async {
                     match self.inner.ready().await {
                         Ok(()) => Ok(()),
                         Err(e) => {
-                            Err(tonic::Status::unknown(format!("Service was not ready: {}", e.into())))
+                            Err($crate::tonic::Status::unknown(format!("Service was not ready: {}", e.into())))
                         }
                     }
                 }
             }
 
             $(
-                crate::macros::define_client! {
+                $crate::define_client! {
                     $service_name,
                     $(#[$method_attr])*
                     $method,
@@ -81,19 +82,19 @@ macro_rules! define_client {
         $(#[$method_attr])*
         pub async fn $method(
             &mut self,
-            request: impl tonic::IntoRequest<$request_ty>,
-        ) -> tonic::Result<tonic::Response<$response_ty>> {
+            request: impl $crate::tonic::IntoRequest<$request_ty>,
+        ) -> $crate::tonic::Result<$crate::tonic::Response<$response_ty>> {
             self.ready().await?;
 
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(tonic::GrpcMethod::new($service_name, $method_name));
+                .insert($crate::tonic::GrpcMethod::new($service_name, $method_name));
 
             let path =
-                http::uri::PathAndQuery::from_static(concat!("/", $service_name, "/", $method_name));
+                $crate::http::uri::PathAndQuery::from_static(concat!("/", $service_name, "/", $method_name));
 
             self.inner
-                .unary(req, path, tonic_prost::ProstCodec::new())
+                .unary(req, path, $crate::tonic_prost::ProstCodec::new())
                 .await
         }
     };
@@ -109,19 +110,19 @@ macro_rules! define_client {
         $(#[$method_attr])*
         pub async fn $method(
             &mut self,
-            request: impl tonic::IntoRequest<$request_ty>,
-        ) -> tonic::Result<tonic::Response<tonic::Streaming<$response_ty>>> {
+            request: impl $crate::tonic::IntoRequest<$request_ty>,
+        ) -> $crate::tonic::Result<$crate::tonic::Response<$crate::tonic::Streaming<$response_ty>>> {
             self.ready().await?;
 
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(tonic::GrpcMethod::new($service_name, $method_name));
+                .insert($crate::tonic::GrpcMethod::new($service_name, $method_name));
 
             let path =
-                http::uri::PathAndQuery::from_static(concat!("/", $service_name, "/", $method_name));
+                $crate::http::uri::PathAndQuery::from_static(concat!("/", $service_name, "/", $method_name));
 
             self.inner
-                .server_streaming(req, path, tonic_prost::ProstCodec::new())
+                .server_streaming(req, path, $crate::tonic_prost::ProstCodec::new())
                 .await
         }
     };
@@ -137,19 +138,19 @@ macro_rules! define_client {
         $(#[$method_attr])*
         pub async fn $method(
             &mut self,
-            request: impl tonic::IntoStreamingRequest<Message = $request_ty>,
-        ) -> tonic::Result<tonic::Response<$response_ty>> {
+            request: impl $crate::tonic::IntoStreamingRequest<Message = $request_ty>,
+        ) -> $crate::tonic::Result<$crate::tonic::Response<$response_ty>> {
             self.ready().await?;
 
             let mut req = request.into_streaming_request();
             req.extensions_mut()
-                .insert(tonic::GrpcMethod::new($service_name, $method_name));
+                .insert($crate::tonic::GrpcMethod::new($service_name, $method_name));
 
             let path =
-                http::uri::PathAndQuery::from_static(concat!("/", $service_name, "/", $method_name));
+                $crate::http::uri::PathAndQuery::from_static(concat!("/", $service_name, "/", $method_name));
 
             self.inner
-                .client_streaming(req, path, tonic_prost::ProstCodec::new())
+                .client_streaming(req, path, $crate::tonic_prost::ProstCodec::new())
                 .await
         }
     };
@@ -165,22 +166,20 @@ macro_rules! define_client {
         $(#[$method_attr])*
         pub async fn $method(
             &mut self,
-            request: impl tonic::IntoStreamingRequest<Message = $request_ty>,
-        ) -> tonic::Result<tonic::Response<tonic::Streaming<$response_ty>>> {
+            request: impl $crate::tonic::IntoStreamingRequest<Message = $request_ty>,
+        ) -> $crate::tonic::Result<$crate::tonic::Response<$crate::tonic::Streaming<$response_ty>>> {
             self.ready().await?;
 
             let mut req = request.into_streaming_request();
             req.extensions_mut()
-                .insert(tonic::GrpcMethod::new($service_name, $method_name));
+                .insert($crate::tonic::GrpcMethod::new($service_name, $method_name));
 
             let path =
-                http::uri::PathAndQuery::from_static(concat!("/", $service_name, "/", $method_name));
+                $crate::http::uri::PathAndQuery::from_static(concat!("/", $service_name, "/", $method_name));
 
             self.inner
-                .streaming(req, path, tonic_prost::ProstCodec::new())
+                .streaming(req, path, $crate::tonic_prost::ProstCodec::new())
                 .await
         }
     };
 }
-
-pub(crate) use define_client;
