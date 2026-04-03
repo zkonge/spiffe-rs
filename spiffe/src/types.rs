@@ -64,6 +64,7 @@ impl TryFrom<ProtoJwtSvid> for JwtSvid {
             spiffe_id,
             svid,
             hint,
+            ..
         }: ProtoJwtSvid,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -209,6 +210,7 @@ impl TryFrom<ProtoX509Svid> for X509Svid {
             x509_svid_key,
             bundle,
             hint,
+            ..
         }: ProtoX509Svid,
     ) -> Result<Self, Self::Error> {
         if x509_svid.is_empty() || x509_svid_key.is_empty() || bundle.is_empty() {

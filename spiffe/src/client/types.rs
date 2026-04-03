@@ -42,6 +42,7 @@ impl TryFrom<spiffe_proto::X509SvidResponse> for X509SvidContext {
             svids,
             crl,
             federated_bundles,
+            ..
         }: spiffe_proto::X509SvidResponse,
     ) -> Result<Self, Self::Error> {
         let svids = svids
@@ -69,7 +70,7 @@ impl TryFrom<spiffe_proto::X509BundlesResponse> for X509BundlesContext {
     type Error = SpiffeError;
 
     fn try_from(
-        spiffe_proto::X509BundlesResponse { crl, bundles }: spiffe_proto::X509BundlesResponse,
+        spiffe_proto::X509BundlesResponse { crl, bundles, .. }: spiffe_proto::X509BundlesResponse,
     ) -> Result<Self, Self::Error> {
         Ok(X509BundlesContext {
             crl: paese_x509_crls(crl),
@@ -89,7 +90,7 @@ impl TryFrom<spiffe_proto::JwtSvidResponse> for JwtSvidContext {
     type Error = SpiffeError;
 
     fn try_from(
-        spiffe_proto::JwtSvidResponse { svids }: spiffe_proto::JwtSvidResponse,
+        spiffe_proto::JwtSvidResponse { svids, .. }: spiffe_proto::JwtSvidResponse,
     ) -> Result<Self, Self::Error> {
         svids
             .into_iter()
@@ -108,7 +109,7 @@ impl TryFrom<spiffe_proto::JwtBundlesResponse> for JwtBundlesContext {
     type Error = SpiffeError;
 
     fn try_from(
-        spiffe_proto::JwtBundlesResponse { bundles }: spiffe_proto::JwtBundlesResponse,
+        spiffe_proto::JwtBundlesResponse { bundles, .. }: spiffe_proto::JwtBundlesResponse,
     ) -> Result<Self, Self::Error> {
         bundles
             .into_iter()

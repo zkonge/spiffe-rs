@@ -8,7 +8,7 @@ use std::{
 use futures_util::Stream;
 use http::{HeaderValue, Request as HttpRequest, Response as HttpResponse, header::CONTENT_TYPE};
 use http_body::Body;
-use prost::Message;
+use buffa::Message;
 use tonic::{
     Code, Request, Response, Result, Status,
     body::Body as TonicBody,
@@ -16,7 +16,7 @@ use tonic::{
     server::{Grpc, NamedService},
     service::{Interceptor, interceptor::InterceptedService},
 };
-use tonic_prost::ProstCodec;
+use tonic_buffa::BuffaCodec;
 use tower_service::Service;
 
 use super::{
@@ -118,12 +118,12 @@ impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
 
     #[inline]
     #[must_use]
-    fn grpc<U, V>(&self) -> Grpc<ProstCodec<U, V>>
+    fn grpc<U, V>(&self) -> Grpc<BuffaCodec<U, V>>
     where
-        U: Message + 'static,
-        V: Message + Default + 'static,
+        U: Message + Send + 'static,
+        V: Message + Default + Send + 'static,
     {
-        Grpc::new(ProstCodec::new()).apply_max_message_size_config(
+        Grpc::new(BuffaCodec::new()).apply_max_message_size_config(
             self.max_decoding_message_size,
             self.max_encoding_message_size,
         )

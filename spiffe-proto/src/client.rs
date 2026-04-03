@@ -1,21 +1,23 @@
 use std::future::Future;
 
+use bytes::Bytes;
 use futures_util::TryFutureExt;
 use http::uri::{PathAndQuery, Uri};
 use http_body::Body;
-use prost::bytes::Bytes;
 use tonic::{
     GrpcMethod, IntoRequest, Request, Response, Result, Status, Streaming,
     body::Body as TonicBody,
     client::{Grpc, GrpcService},
     metadata::{MetadataKey, MetadataValue},
 };
-use tonic_prost::ProstCodec;
+use tonic_buffa::{BuffaCodec, BuffaViewCodec, OwnedView};
 
 use super::{
-    JwtBundlesRequest, JwtBundlesResponse, JwtSvidRequest, JwtSvidResponse, SPIFFE_METADATA_KEY,
-    SPIFFE_METADATA_VALUE, ValidateJwtSvidRequest, ValidateJwtSvidResponse, X509BundlesRequest,
-    X509BundlesResponse, X509SvidRequest, X509SvidResponse,
+    JwtBundlesRequest, JwtBundlesResponse, JwtSvidRequest, JwtSvidResponse,
+    JwtSvidResponseView,
+    SPIFFE_METADATA_KEY, SPIFFE_METADATA_VALUE, ValidateJwtSvidRequest,
+    ValidateJwtSvidResponse, X509BundlesRequest, X509BundlesResponse,
+    X509SvidRequest, X509SvidResponse,
 };
 use crate::StdError;
 
@@ -86,7 +88,7 @@ where
         );
 
         self.inner
-            .server_streaming(req, path, ProstCodec::new())
+            .server_streaming(req, path, BuffaCodec::new())
             .await
     }
 
@@ -107,7 +109,7 @@ where
         );
 
         self.inner
-            .server_streaming(req, path, ProstCodec::new())
+            .server_streaming(req, path, BuffaCodec::new())
             .await
     }
 
@@ -126,7 +128,23 @@ where
             "/SpiffeWorkloadAPI/FetchJWTSVID",
         );
 
-        self.inner.unary(req, path, ProstCodec::new()).await
+        self.inner.unary(req, path, BuffaCodec::new()).await
+    }
+
+    /// Fetches the JWT-SVIDs with zero-copy view decoding to reduce copy overhead.
+    pub async fn fetch_jwt_svid_view(
+        &mut self,
+        req: impl IntoRequest<JwtSvidRequest>,
+    ) -> Result<Response<OwnedView<JwtSvidResponseView<'static>>>> {
+        self.ready().await?;
+
+        let (req, path) = make_request(
+            req.into_request(),
+            "FetchJWTSVID",
+            "/SpiffeWorkloadAPI/FetchJWTSVID",
+        );
+
+        self.inner.unary(req, path, BuffaViewCodec::new()).await
     }
 
     /// Fetches the JWT bundles, formatted as JWKS documents, keyed by the
@@ -145,7 +163,7 @@ where
         );
 
         self.inner
-            .server_streaming(req, path, ProstCodec::new())
+            .server_streaming(req, path, BuffaCodec::new())
             .await
     }
 
@@ -163,7 +181,7 @@ where
             "/SpiffeWorkloadAPI/ValidateJWTSVID",
         );
 
-        self.inner.unary(req, path, ProstCodec::new()).await
+        self.inner.unary(req, path, BuffaCodec::new()).await
     }
 
     #[inline]

@@ -67,14 +67,14 @@ where
     }
 
     pub async fn fetch_x509_svid(&self) -> Result<X509SvidContextStream> {
-        let request = spiffe_proto::X509SvidRequest {};
+        let request = spiffe_proto::X509SvidRequest::default();
         let response = self.client.clone().fetch_x509_svid(request).await?;
 
         Ok(X509SvidContextStream(response.into_inner()))
     }
 
     pub async fn fetch_x509_bundles(&self) -> Result<X509BundlesContextStream> {
-        let request = spiffe_proto::X509BundlesRequest {};
+        let request = spiffe_proto::X509BundlesRequest::default();
         let response = self.client.clone().fetch_x509_bundles(request).await?;
 
         Ok(X509BundlesContextStream(response.into_inner()))
@@ -91,6 +91,7 @@ where
                 .chain(more_audiences.into())
                 .collect(),
             spiffe_id: spiffe_id.unwrap_or_default(),
+            ..Default::default()
         };
         let response = self.client.clone().fetch_jwt_svid(request).await?;
 
@@ -102,7 +103,7 @@ where
     }
 
     pub async fn fetch_jwt_bundles(&self) -> Result<JwtBundlesStream> {
-        let request = spiffe_proto::JwtBundlesRequest {};
+        let request = spiffe_proto::JwtBundlesRequest::default();
         let response = self.client.clone().fetch_jwt_bundles(request).await?;
 
         Ok(JwtBundlesStream(response.into_inner()))
