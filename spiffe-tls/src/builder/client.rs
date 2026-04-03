@@ -139,40 +139,48 @@ impl<P, S> ClientConfigBuilder<P, S, Missing> {
     }
 }
 
-impl<S> ClientConfigBuilder<Present, S, Present> {
-    pub async fn build(self) -> Result<ClientConfig, Error> {
-        let crypto_provider = self
-            .core
-            .crypto_provider
-            .expect("builder state mismatch: crypto provider");
-        let peer_policy = self
-            .core
-            .peer_policy
-            .expect("builder state mismatch: peer policy");
-
-        let material = build_material_stream(
-            self.core.source,
-            crypto_provider.clone(),
-            self.core.svid_selector,
-        )
-        .await?;
-
-        let verifier = Arc::new(SpiffeCertVerifier::new(
-            material.clone(),
-            crypto_provider.clone(),
-            peer_policy,
-            true,
-        ));
-        let resolver = Arc::new(SpiffeCertResolver::new(material));
-
-        let config = ClientConfig::builder_with_provider(crypto_provider)
-            .with_protocol_versions(&[&version::TLS13])?
-            .dangerous()
-            .with_custom_certificate_verifier(verifier)
-            .with_client_cert_resolver(resolver);
-
-        Ok(config)
+impl ClientConfigBuilder<Present, SourceFromBundle, Present> {
+    #[inline]
+    pub fn build(self) -> impl Future<Output = Result<ClientConfig, Error>> {
+        build_impl(self)
     }
+}
+
+impl ClientConfigBuilder<Present, SourceFromSvid, Present> {
+    #[inline]
+    pub fn build(self) -> impl Future<Output = Result<ClientConfig, Error>> {
+        build_impl(self)
+    }
+}
+
+async fn build_impl<S>(s: ClientConfigBuilder<Present, S, Present>) -> Result<ClientConfig, Error> {
+    let crypto_provider = s
+        .core
+        .crypto_provider
+        .expect("builder state mismatch: crypto provider");
+    let peer_policy = s
+        .core
+        .peer_policy
+        .expect("builder state mismatch: peer policy");
+
+    let material =
+        build_material_stream(s.core.source, crypto_provider.clone(), s.core.svid_selector).await?;
+
+    let verifier = Arc::new(SpiffeCertVerifier::new(
+        material.clone(),
+        crypto_provider.clone(),
+        peer_policy,
+        true,
+    ));
+    let resolver = Arc::new(SpiffeCertResolver::new(material));
+
+    let config = ClientConfig::builder_with_provider(crypto_provider)
+        .with_protocol_versions(&[&version::TLS13])?
+        .dangerous()
+        .with_custom_certificate_verifier(verifier)
+        .with_client_cert_resolver(resolver);
+
+    Ok(config)
 }
 
 impl Default for ClientConfigBuilder<Missing, SourceMissing, Missing> {
