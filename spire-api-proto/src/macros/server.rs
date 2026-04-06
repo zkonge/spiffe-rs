@@ -118,11 +118,12 @@ macro_rules! define_server {
                     Output = Result<http::Response<tonic::body::Body>, std::convert::Infallible>,
                 > + Send,
             > + Clone
+            + tonic::server::NamedService
             where
                 B: http_body::Body + Send + 'static,
                 B::Error: Into<crate::StdError> + Send + 'static,
             {
-                crate::service::SvcFn(move |req: http::Request<B>| {
+                let svc = move |req: http::Request<B>| {
                     let server = self.clone();
                     async move {
                         let inner = &*server.inner;
@@ -147,7 +148,16 @@ macro_rules! define_server {
 
                         Ok(resp)
                     }
-                })
+                };
+
+                #[derive(Clone)]
+                struct NamedServiceToken;
+
+                impl tonic::server::NamedService for NamedServiceToken {
+                    const NAME: &'static str = $service_name;
+                }
+
+                crate::service::NamedSvcFn(svc, NamedServiceToken)
             }
         }
 
@@ -160,10 +170,6 @@ macro_rules! define_server {
                     max_encoding_message_size: self.max_encoding_message_size,
                 }
             }
-        }
-
-        impl<T> tonic::server::NamedService for $server_name<T> {
-            const NAME: &'static str = $service_name;
         }
     };
 
