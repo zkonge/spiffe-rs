@@ -3,7 +3,7 @@ mod grpc;
 mod server;
 mod service;
 
-pub use self::service::{SvcFn, grpc_unimplemented};
+pub use self::service::{NamedSvcFn, SvcFn, grpc_unimplemented};
 
 pub type StdError = Box<dyn core::error::Error + Send + Sync + 'static>;
 

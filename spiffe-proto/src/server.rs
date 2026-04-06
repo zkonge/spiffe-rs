@@ -138,11 +138,12 @@ impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
         Error = Infallible,
         Future = impl Future<Output = Result<HttpResponse<TonicBody>, Infallible>> + Send,
     > + Clone
+    + NamedService
     where
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
-        SvcFn(move |req: HttpRequest<B>| {
+        let svc = move |req: HttpRequest<B>| {
             let server = self.clone();
             async move {
                 if req
@@ -185,7 +186,16 @@ impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
 
                 Ok(resp)
             }
-        })
+        };
+
+        #[derive(Clone)]
+        struct NamedServiceToken;
+
+        impl NamedService for NamedServiceToken {
+            const NAME: &'static str = "SpiffeWorkloadAPI";
+        }
+
+        NamedSvcFn(svc, NamedServiceToken)
     }
 }
 
@@ -197,10 +207,6 @@ impl<T> Clone for SpiffeWorkloadApiServer<T> {
             max_encoding_message_size: self.max_encoding_message_size,
         }
     }
-}
-
-impl<T> NamedService for SpiffeWorkloadApiServer<T> {
-    const NAME: &'static str = "SpiffeWorkloadAPI";
 }
 
 #[derive(Clone)]
@@ -222,6 +228,32 @@ where
     fn call(&mut self, req: ReqTy) -> Self::Future {
         (self.0)(req)
     }
+}
+
+#[derive(Clone)]
+struct NamedSvcFn<F, T: NamedService>(F, T);
+
+impl<F, Fut, ReqTy, RespTy, E, T> Service<ReqTy> for NamedSvcFn<F, T>
+where
+    F: FnMut(ReqTy) -> Fut,
+    Fut: Future<Output = Result<RespTy, E>>,
+    T: NamedService,
+{
+    type Response = RespTy;
+    type Error = E;
+    type Future = Fut;
+
+    fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), E>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, req: ReqTy) -> Self::Future {
+        (self.0)(req)
+    }
+}
+
+impl<F, T: NamedService> NamedService for NamedSvcFn<F, T> {
+    const NAME: &'static str = T::NAME;
 }
 
 fn unimplemented() -> HttpResponse<TonicBody> {
