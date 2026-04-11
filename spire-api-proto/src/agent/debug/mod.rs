@@ -1,7 +1,8 @@
 mod types;
 
+use tonic_service::define_grpc;
+
 pub use self::types::*;
-use crate::macros::define_grpc;
 
 define_grpc! {
     Debug,

@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! define_grpc {
     (
         $(#[$grpc_attr:meta])*
@@ -11,7 +12,7 @@ macro_rules! define_grpc {
         )*
     ) => {
         #[cfg(feature = "client")]
-        crate::macros::define_client! {
+        $crate::define_client! {
             $(#[$grpc_attr])*
             $client_name,
             $service_name,
@@ -22,7 +23,7 @@ macro_rules! define_grpc {
         }
 
         #[cfg(feature = "server")]
-        crate::macros::define_server! {
+        $crate::define_server! {
             $(#[$grpc_attr])*
             $trait_name,
             $server_name,
@@ -34,5 +35,3 @@ macro_rules! define_grpc {
         }
     };
 }
-
-pub(crate) use define_grpc;

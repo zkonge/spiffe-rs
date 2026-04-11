@@ -1,7 +1,9 @@
 mod types;
 
+use tonic_service::define_grpc;
+
 pub use self::types::*;
-use crate::{Logger as LoggerType, macros::define_grpc};
+use crate::Logger as LoggerType;
 
 define_grpc! {
     Logger,

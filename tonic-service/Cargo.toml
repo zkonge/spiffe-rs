@@ -1,0 +1,13 @@
+[package]
+name = "tonic-service"
+version = "0.0.0"
+edition.workspace = true
+
+[dependencies]
+futures-core.workspace = true
+http.workspace = true
+http-body.workspace = true
+prost.workspace = true
+tonic = { workspace = true, default-features = false }
+tonic-prost.workspace = true
+tower-service.workspace = true

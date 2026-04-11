@@ -1,7 +1,9 @@
 mod types;
 
+use tonic_service::define_grpc;
+
 pub use self::types::*;
-use crate::{Agent as AgentType, JoinToken, macros::define_grpc};
+use crate::{Agent as AgentType, JoinToken};
 
 define_grpc! {
     Agent,

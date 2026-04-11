@@ -6,6 +6,7 @@ members = [
     "spiffe-proto",
     "spiffe-tls",
     "spire-api-proto",
+    "tonic-service",
 ]
 
 [workspace.package]
@@ -17,6 +18,7 @@ spiffe-id = { path = "./spiffe-id" }
 spiffe-proto = { path = "./spiffe-proto" }
 spiffe-tls = { path = "./spiffe-tls" }
 spire-api-proto = { path = "./spire-api-proto" }
+tonic-service = { path = "./tonic-service" }
 
 serde_core = { version = "1.0.228", default-features = false, features = [
     "alloc",

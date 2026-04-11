@@ -11,7 +11,7 @@ use tonic::{
 use tower_service::Service;
 
 #[derive(Clone)]
-pub(crate) struct SvcFn<F>(pub F);
+pub struct SvcFn<F>(pub F);
 
 impl<F, Fut, ReqTy, RespTy, E> Service<ReqTy> for SvcFn<F>
 where
@@ -57,7 +57,7 @@ impl<F, T: NamedService> NamedService for NamedSvcFn<F, T> {
     const NAME: &'static str = T::NAME;
 }
 
-pub(crate) fn unimplemented() -> HttpResponse<TonicBody> {
+pub fn grpc_unimplemented() -> HttpResponse<TonicBody> {
     let mut response = HttpResponse::new(TonicBody::empty());
     let headers = response.headers_mut();
     headers.insert(Status::GRPC_STATUS, (Code::Unimplemented as i32).into());

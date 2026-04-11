@@ -1,7 +1,9 @@
 mod types;
 
+use tonic_service::define_grpc;
+
 pub use self::types::*;
-use crate::{Entry as EntryType, macros::define_grpc};
+use crate::Entry as EntryType;
 
 define_grpc! {
     /// Manages registration entries stored by the SPIRE Server.

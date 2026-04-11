@@ -1,7 +1,9 @@
 mod types;
 
+use tonic_service::define_grpc;
+
 pub use self::types::*;
-use crate::{Bundle as BundleType, macros::define_grpc};
+use crate::Bundle as BundleType;
 
 define_grpc! {
     Bundle,
