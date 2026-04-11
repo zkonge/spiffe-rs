@@ -3,6 +3,7 @@ extern crate alloc;
 
 mod error;
 mod id;
+mod path;
 #[cfg(feature = "serde")]
 mod serde_support;
 mod trust_domain;
@@ -10,6 +11,7 @@ mod trust_domain;
 pub use crate::{
     error::{SpiffeIdError, TrustDomainError},
     id::SpiffeId,
+    path::Path,
     trust_domain::TrustDomain,
 };
 
@@ -52,6 +54,53 @@ const fn validate_trust_domain(td: &[u8]) -> Result<(), TrustDomainError> {
             return Err(TrustDomainError::Character);
         }
         i += 1;
+    }
+
+    Ok(())
+}
+
+#[inline]
+const fn validate_path(path: &[u8]) -> Result<(), SpiffeIdError> {
+    if path.is_empty() || path[0] != b'/' {
+        return Err(SpiffeIdError::PathSeparator);
+    }
+
+    // 2.2. Path
+    if path[path.len() - 1] == b'/' {
+        return Err(SpiffeIdError::TrailingSlash);
+    }
+
+    // 2.2. Path
+    let mut i = 0;
+    while i < path.len() {
+        if !validate_path_charset(path[i]) {
+            return Err(SpiffeIdError::Character);
+        }
+        i += 1;
+    }
+
+    // 2.2. Path
+    let mut segment_start = 1;
+    let mut j = 1;
+    while j <= path.len() {
+        if j == path.len() || path[j] == b'/' {
+            let segment_len = j - segment_start;
+            if segment_len == 0 {
+                return Err(SpiffeIdError::EmptySegment);
+            }
+
+            if segment_len == 1 && path[segment_start] == b'.' {
+                return Err(SpiffeIdError::DotSegment);
+            }
+
+            if segment_len == 2 && path[segment_start] == b'.' && path[segment_start + 1] == b'.' {
+                return Err(SpiffeIdError::DotSegment);
+            }
+
+            segment_start = j + 1;
+        }
+
+        j += 1;
     }
 
     Ok(())

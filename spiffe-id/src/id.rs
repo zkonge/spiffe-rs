@@ -7,11 +7,11 @@
 //! # Examples
 //!
 //! ```
-//! use spiffe_id::{SpiffeId, TrustDomain};
+//! use spiffe_id::{Path, SpiffeId, TrustDomain};
 //!
 //! let id = SpiffeId::new("spiffe://example.org/service").unwrap();
 //! assert_eq!(id.trust_domain(), TrustDomain::const_new("example.org"));
-//! assert_eq!(id.path(), "/service");
+//! assert_eq!(id.path(), Path::new("/service").unwrap());
 //! ```
 //!
 //! # References
@@ -25,7 +25,7 @@ use core::{
 };
 
 use crate::{
-    SPIFFE_SCHEME, SpiffeIdError, TrustDomain, tri, validate_path_charset, validate_trust_domain,
+    Path, SPIFFE_SCHEME, SpiffeIdError, TrustDomain, tri, validate_path, validate_trust_domain,
 };
 
 /// A unique identifier for a workload within the SPIFFE ecosystem.
@@ -70,24 +70,7 @@ impl SpiffeId {
             return Err(SpiffeIdError::TrustDomain(e));
         }
 
-        // 2.2. Path
-        if path.ends_with(b"/") {
-            return Err(SpiffeIdError::TrailingSlash);
-        }
-
-        // 2.2. Path
-        if !path.iter().cloned().all(validate_path_charset) {
-            return Err(SpiffeIdError::Character);
-        }
-
-        // 2.2. Path
-        for segment in path.split(|&c| c == b'/').skip(1) {
-            match segment {
-                b"" => return Err(SpiffeIdError::EmptySegment),
-                b"." | b".." => return Err(SpiffeIdError::DotSegment),
-                _ => {}
-            }
-        }
+        tri!(validate_path(path));
 
         let path_offset = td.len() + SPIFFE_SCHEME.len();
 
@@ -108,10 +91,10 @@ impl SpiffeId {
 
     /// Returns the path component of the SPIFFE ID.
     #[inline]
-    pub const fn path(&self) -> &str {
+    pub const fn path(&self) -> Path<'_> {
         let (_, path) = self.id.split_at(self.path_offset as usize);
 
-        path
+        Path::new_unchecked(path)
     }
 
     /// Returns the full SPIFFE ID as a string slice.
@@ -172,7 +155,7 @@ mod tests {
     fn test_parse() {
         let id = SpiffeId::new("spiffe://example.org/path").unwrap();
         assert_eq!(id.trust_domain(), TrustDomain::new("example.org").unwrap());
-        assert_eq!(id.path(), "/path");
+        assert_eq!(id.path(), Path::new("/path").unwrap());
 
         assert!(SpiffeId::new("spiffe://example.org/").is_err());
         assert!(SpiffeId::new("spiffe://example.org/path/").is_err());

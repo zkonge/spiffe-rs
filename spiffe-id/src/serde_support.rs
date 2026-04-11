@@ -11,7 +11,7 @@ use serde_core::{
     de::{Error, Unexpected, Visitor},
 };
 
-use crate::{SpiffeId, TrustDomain, tri};
+use crate::{Path, SpiffeId, TrustDomain, tri};
 
 struct CowStrVisitor;
 
@@ -96,5 +96,25 @@ impl<'a, 'de: 'a> Deserialize<'de> for TrustDomain<'a> {
         let id: Cow<'a, str> = tri!(deserializer.deserialize_str(CowStrVisitor));
 
         id.try_into().map_err(de::Error::custom)
+    }
+}
+
+impl Serialize for Path<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'a, 'de: 'a> Deserialize<'de> for Path<'a> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let path: Cow<'a, str> = tri!(deserializer.deserialize_str(CowStrVisitor));
+
+        path.try_into().map_err(de::Error::custom)
     }
 }

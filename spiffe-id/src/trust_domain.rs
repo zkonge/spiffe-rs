@@ -123,7 +123,7 @@ impl<'a> TrustDomain<'a> {
         };
 
         if validate_trust_domain(td.as_bytes()).is_err() {
-            panic!("Invalid trust domain");
+            panic!("invalid trust domain");
         }
 
         TrustDomain {
