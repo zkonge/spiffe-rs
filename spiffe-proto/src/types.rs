@@ -159,3 +159,69 @@ pub struct ValidateJwtSvidResponse {
     #[prost(message, optional, tag = "2")]
     pub claims: Option<Struct>,
 }
+
+/// The WITSVIDRequest message conveys parameters for requesting a WIT-SVID.
+#[derive(Clone, PartialEq, Message)]
+pub struct WitSvidRequest {
+    /// Optional. The requested SPIFFE ID for the WIT-SVID. If unset, all WIT-SVIDs
+    /// to which the workload is entitled are requested.
+    #[prost(string, tag = "1")]
+    pub spiffe_id: String,
+}
+
+/// The WITSVIDResponse message carries WIT-SVIDs.
+#[derive(Clone, PartialEq, Message)]
+pub struct WitSvidResponse {
+    /// Required.
+    /// A list of WITSVID messages, each of which includes a single WIT-SVID and
+    /// its private key.
+    #[prost(message, repeated, tag = "1")]
+    pub svids: Vec<WitSvid>,
+}
+
+/// The WITSVID message carries a single SVID and all associated information,
+/// including the WIT bundle for the trust domain.
+#[derive(Clone, PartialEq, Message)]
+pub struct WitSvid {
+    /// Required.
+    /// The SPIFFE ID of the SVID in this entry
+    #[prost(string, tag = "1")]
+    pub spiffe_id: String,
+
+    /// Required.
+    /// Encoded WIT SVID using compact JWS serialization.
+    #[prost(string, tag = "2")]
+    pub wit_svid: String,
+
+    /// Required.
+    /// JWK (RFC 7517) encoded private key for the WIT SVID.
+    #[prost(string, tag = "3")]
+    pub wit_svid_key: String,
+
+    /// Optional.
+    /// An operator-specified string used to provide guidance on how this identity
+    /// should be used by a workload when more than one SVID is returned.
+    /// For example, `internal` and `external` to indicate a SVID for internal or
+    /// external use, respectively.
+    #[prost(string, tag = "4")]
+    pub hint: String,
+}
+
+/// The WITBundlesRequest message conveys parameters for requesting WIT
+/// bundles. There are currently no such parameters.
+#[derive(Clone, Copy, PartialEq, Message)]
+pub struct WitBundlesRequest {}
+
+/// The WITBundlesResponse message carries a map of trust bundles the workload
+/// should trust.
+#[derive(Clone, PartialEq, Message)]
+pub struct WitBundlesResponse {
+    /// Required.
+    /// WIT trust bundles belonging to trust domains that the workload should
+    /// trust, keyed by the SPIFFE ID of the trust domain.
+    ///
+    /// Bundles are encoded in JWK set (RFC 7517) format. Each JWK MUST specify the
+    /// `kid` member with a unique identifier for the key.
+    #[prost(map = "string, string", tag = "1")]
+    pub bundles: HashMap<String, String>,
+}

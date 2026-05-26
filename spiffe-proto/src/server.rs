@@ -21,8 +21,9 @@ use tower_service::Service;
 
 use super::{
     JwtBundlesRequest, JwtBundlesResponse, JwtSvidRequest, JwtSvidResponse, SPIFFE_METADATA_KEY,
-    SPIFFE_METADATA_VALUE, ValidateJwtSvidRequest, ValidateJwtSvidResponse, X509BundlesRequest,
-    X509BundlesResponse, X509SvidRequest, X509SvidResponse,
+    SPIFFE_METADATA_VALUE, ValidateJwtSvidRequest, ValidateJwtSvidResponse, WitBundlesRequest,
+    WitBundlesResponse, WitSvidRequest, WitSvidResponse, X509BundlesRequest, X509BundlesResponse,
+    X509SvidRequest, X509SvidResponse,
 };
 use crate::StdError;
 
@@ -73,6 +74,32 @@ pub trait SpiffeWorkloadApi: Send + Sync + 'static {
         &self,
         req: Request<ValidateJwtSvidRequest>,
     ) -> impl Future<Output = Result<Response<ValidateJwtSvidResponse>>> + Send;
+
+    type FetchWitSvidStream: Stream<Item = Result<WitSvidResponse>> + Send;
+
+    /// Fetch WIT-SVIDs for all SPIFFE identities the workload is entitled to. If
+    /// the identities which the workload is entitled to change, or, they are
+    /// renewed, the server will stream subsequent messages to the client.
+    /// 
+    /// Must return Unimplemented where Workload API endpoint does not support the
+    /// WIT-SVID profile.
+    fn fetch_wit_svid(
+        &self,
+        req: Request<WitSvidRequest>,
+    ) -> impl Future<Output = Result<Response<Self::FetchWitSvidStream>>> + Send;
+
+    type FetchWitBundlesStream: Stream<Item = Result<WitBundlesResponse>> + Send;
+
+    /// Fetch trust bundles. Useful for clients that only need to validate SVIDs
+    /// without obtaining an SVID for themselves. As this information changes,
+    /// subsequent messages will be streamed from the server.
+    ///
+    /// Must return Unimplemented where Workload API endpoint does not support the
+    /// WIT-SVID profile.
+    fn fetch_wit_bundles(
+        &self,
+        req: Request<WitBundlesRequest>,
+    ) -> impl Future<Output = Result<Response<Self::FetchWitBundlesStream>>> + Send;
 }
 
 #[derive(Debug)]
@@ -180,6 +207,14 @@ impl<T: SpiffeWorkloadApi> SpiffeWorkloadApiServer<T> {
                     Some("ValidateJWTSVID") => {
                         let s = SvcFn(|req| T::validate_jwt_svid(inner, req));
                         server.grpc().unary(s, req).await
+                    }
+                    Some("FetchWITSVID") => {
+                        let s = SvcFn(|req| T::fetch_wit_svid(inner, req));
+                        server.grpc().server_streaming(s, req).await
+                    }
+                    Some("FetchWITBundles") => {
+                        let s = SvcFn(|req| T::fetch_wit_bundles(inner, req));
+                        server.grpc().server_streaming(s, req).await
                     }
                     _ => unimplemented(),
                 };

@@ -14,8 +14,9 @@ use tonic_prost::ProstCodec;
 
 use super::{
     JwtBundlesRequest, JwtBundlesResponse, JwtSvidRequest, JwtSvidResponse, SPIFFE_METADATA_KEY,
-    SPIFFE_METADATA_VALUE, ValidateJwtSvidRequest, ValidateJwtSvidResponse, X509BundlesRequest,
-    X509BundlesResponse, X509SvidRequest, X509SvidResponse,
+    SPIFFE_METADATA_VALUE, ValidateJwtSvidRequest, ValidateJwtSvidResponse, WitBundlesRequest,
+    WitBundlesResponse, WitSvidRequest, WitSvidResponse, X509BundlesRequest, X509BundlesResponse,
+    X509SvidRequest, X509SvidResponse,
 };
 use crate::StdError;
 
@@ -164,6 +165,52 @@ where
         );
 
         self.inner.unary(req, path, ProstCodec::new()).await
+    }
+
+    /// Fetch WIT-SVIDs for all SPIFFE identities the workload is entitled to. If
+    /// the identities which the workload is entitled to change, or, they are
+    /// renewed, the server will stream subsequent messages to the client.
+    /// 
+    /// Must return Unimplemented where Workload API endpoint does not support the
+    /// WIT-SVID profile.
+    pub async fn fetch_wit_svid(
+        &mut self,
+        req: impl IntoRequest<WitSvidRequest>,
+    ) -> Result<Response<Streaming<WitSvidResponse>>> {
+        self.ready().await?;
+
+        let (req, path) = make_request(
+            req.into_request(),
+            "FetchWITSVID",
+            "/SpiffeWorkloadAPI/FetchWITSVID",
+        );
+
+        self.inner
+            .server_streaming(req, path, ProstCodec::new())
+            .await
+    }
+
+    /// Fetch trust bundles. Useful for clients that only need to validate SVIDs
+    /// without obtaining an SVID for themselves. As this information changes,
+    /// subsequent messages will be streamed from the server.
+    ///
+    /// Must return Unimplemented where Workload API endpoint does not support the
+    /// WIT-SVID profile.
+    pub async fn fetch_wit_bundles(
+        &mut self,
+        req: impl IntoRequest<WitBundlesRequest>,
+    ) -> Result<Response<Streaming<WitBundlesResponse>>> {
+        self.ready().await?;
+
+        let (req, path) = make_request(
+            req.into_request(),
+            "FetchWITBundles",
+            "/SpiffeWorkloadAPI/FetchWITBundles",
+        );
+
+        self.inner
+            .server_streaming(req, path, ProstCodec::new())
+            .await
     }
 
     #[inline]

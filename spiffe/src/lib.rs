@@ -13,7 +13,7 @@ pub use self::jwt::spiffe_id_from_jwt_svid_unchecked;
 pub use self::{
     der::{CertificateIter, spiffe_id_from_x509_svid_unchecked, split_certificates},
     error::{InvalidDerError, SpiffeError},
-    types::{JwtSvid, X509Bundle, X509Svid},
+    types::{JwtSvid, WitSvid, X509Bundle, X509Svid},
 };
 
 type StdError = Box<dyn core::error::Error + Send + Sync + 'static>;

@@ -10,8 +10,11 @@ use tonic::{Result, Status, body::Body as TonicBody, client::GrpcService};
 
 use self::types::JwtSvidContext;
 pub use self::{
-    stream::{JwtBundlesStream, X509BundlesContextStream, X509SvidContextStream},
-    types::{X509BundlesContext, X509SvidContext},
+    stream::{
+        JwtBundlesStream, WitBundlesStream, WitSvidContextStream, X509BundlesContextStream,
+        X509SvidContextStream,
+    },
+    types::{WitSvidContext, X509BundlesContext, X509SvidContext},
 };
 use crate::{JwtSvid, SpiffeError, StdError};
 
@@ -106,6 +109,22 @@ where
         let response = self.client.clone().fetch_jwt_bundles(request).await?;
 
         Ok(JwtBundlesStream(response.into_inner()))
+    }
+
+    pub async fn fetch_wit_svid(&self, spiffe_id: Option<String>) -> Result<WitSvidContextStream> {
+        let request = spiffe_proto::WitSvidRequest {
+            spiffe_id: spiffe_id.unwrap_or_default(),
+        };
+        let response = self.client.clone().fetch_wit_svid(request).await?;
+
+        Ok(WitSvidContextStream(response.into_inner()))
+    }
+
+    pub async fn fetch_wit_bundles(&self) -> Result<WitBundlesStream> {
+        let request = spiffe_proto::WitBundlesRequest {};
+        let response = self.client.clone().fetch_wit_bundles(request).await?;
+
+        Ok(WitBundlesStream(response.into_inner()))
     }
 
     #[cfg(feature = "jwt")]

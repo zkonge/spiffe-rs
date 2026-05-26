@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter, Result as FmtResult};
 use prost::bytes::Bytes;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use spiffe_id::SpiffeId;
-use spiffe_proto::{JwtSvid as ProtoJwtSvid, X509Svid as ProtoX509Svid};
+use spiffe_proto::{JwtSvid as ProtoJwtSvid, WitSvid as ProtoWitSvid, X509Svid as ProtoX509Svid};
 
 use super::{InvalidDerError, SpiffeError, split_certificates};
 
@@ -69,6 +69,92 @@ impl TryFrom<ProtoJwtSvid> for JwtSvid {
         Ok(Self {
             spiffe_id: SpiffeId::new(spiffe_id)?,
             svid: svid.into(),
+            hint: if hint.is_empty() {
+                None
+            } else {
+                Some(hint.into())
+            },
+        })
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub struct WitSvid {
+    spiffe_id: SpiffeId,
+    svid: Box<str>,
+    key: Box<str>,
+    hint: Option<Box<str>>,
+}
+
+impl WitSvid {
+    #[inline]
+    pub fn spiffe_id(&self) -> &SpiffeId {
+        &self.spiffe_id
+    }
+
+    #[inline]
+    pub fn svid(&self) -> &str {
+        &self.svid
+    }
+
+    #[inline]
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    #[inline]
+    pub fn hint(&self) -> Option<&str> {
+        self.hint.as_deref()
+    }
+
+    #[inline]
+    pub fn into_parts(self) -> (SpiffeId, String, String) {
+        (self.spiffe_id, self.svid.into(), self.key.into())
+    }
+
+    #[cfg(feature = "unchecked-api")]
+    #[inline]
+    pub fn new_unchecked(
+        spiffe_id: SpiffeId,
+        svid: Box<str>,
+        key: Box<str>,
+        hint: Option<Box<str>>,
+    ) -> Self {
+        Self {
+            spiffe_id,
+            svid,
+            key,
+            hint,
+        }
+    }
+}
+
+impl Debug for WitSvid {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("WitSvid")
+            .field("spiffe_id", &self.spiffe_id)
+            .field("svid", &"[secret elided]")
+            .field("key", &"[secret elided]")
+            .field("hint", &self.hint)
+            .finish()
+    }
+}
+
+impl TryFrom<ProtoWitSvid> for WitSvid {
+    type Error = SpiffeError;
+
+    fn try_from(
+        ProtoWitSvid {
+            spiffe_id,
+            wit_svid,
+            wit_svid_key,
+            hint,
+        }: ProtoWitSvid,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            spiffe_id: SpiffeId::new(spiffe_id)?,
+            svid: wit_svid.into(),
+            key: wit_svid_key.into(),
             hint: if hint.is_empty() {
                 None
             } else {

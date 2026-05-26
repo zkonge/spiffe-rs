@@ -4,7 +4,7 @@ use prost::bytes::Bytes;
 use rustls_pki_types::CertificateRevocationListDer;
 use spiffe_id::TrustDomain;
 
-use crate::{JwtSvid, SpiffeError, X509Bundle, X509Svid};
+use crate::{JwtSvid, SpiffeError, WitSvid, X509Bundle, X509Svid};
 
 fn paese_x509_crls(crls: Vec<Bytes>) -> Vec<CertificateRevocationListDer<'static>> {
     crls.into_iter()
@@ -126,6 +126,54 @@ impl TryFrom<spiffe_proto::JwtBundlesResponse> for JwtBundlesContext {
 
 impl From<JwtBundlesContext> for HashMap<TrustDomain<'static>, String> {
     fn from(context: JwtBundlesContext) -> Self {
+        context.bundles
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct WitSvidContext {
+    pub svids: Vec<WitSvid>,
+}
+
+impl TryFrom<spiffe_proto::WitSvidResponse> for WitSvidContext {
+    type Error = SpiffeError;
+
+    fn try_from(
+        spiffe_proto::WitSvidResponse { svids }: spiffe_proto::WitSvidResponse,
+    ) -> Result<Self, Self::Error> {
+        svids
+            .into_iter()
+            .map(WitSvid::try_from)
+            .collect::<Result<_, _>>()
+            .map(|svids| WitSvidContext { svids })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct WitBundlesContext {
+    pub bundles: HashMap<TrustDomain<'static>, String>,
+}
+
+impl TryFrom<spiffe_proto::WitBundlesResponse> for WitBundlesContext {
+    type Error = SpiffeError;
+
+    fn try_from(
+        spiffe_proto::WitBundlesResponse { bundles }: spiffe_proto::WitBundlesResponse,
+    ) -> Result<Self, Self::Error> {
+        bundles
+            .into_iter()
+            .map(|(td, bundle)| {
+                let td = TrustDomain::try_from(td)?;
+
+                Ok::<_, Self::Error>((td, bundle))
+            })
+            .collect::<Result<HashMap<_, _>, _>>()
+            .map(|bundles| WitBundlesContext { bundles })
+    }
+}
+
+impl From<WitBundlesContext> for HashMap<TrustDomain<'static>, String> {
+    fn from(context: WitBundlesContext) -> Self {
         context.bundles
     }
 }

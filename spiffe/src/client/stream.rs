@@ -8,7 +8,9 @@ use futures_core::Stream;
 use spiffe_id::TrustDomain;
 use tonic::Streaming;
 
-use super::types::{JwtBundlesContext, X509BundlesContext, X509SvidContext};
+use super::types::{
+    JwtBundlesContext, WitBundlesContext, WitSvidContext, X509BundlesContext, X509SvidContext,
+};
 
 macro_rules! impl_stream {
     ($name:ident, $proto_ty:ty, $resp_ty:ty) => {
@@ -67,4 +69,14 @@ impl_stream!(
     JwtBundlesStream,
     spiffe_proto::JwtBundlesResponse,
     JwtBundlesContext => HashMap<TrustDomain<'static>, String>
+);
+impl_stream!(
+    WitSvidContextStream,
+    spiffe_proto::WitSvidResponse,
+    WitSvidContext
+);
+impl_stream!(
+    WitBundlesStream,
+    spiffe_proto::WitBundlesResponse,
+    WitBundlesContext => HashMap<TrustDomain<'static>, String>
 );
