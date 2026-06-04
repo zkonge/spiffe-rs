@@ -1,7 +1,9 @@
 //! Represents the path component of a SPIFFE ID.
 //!
-//! The [`Path`] struct encapsulates SPIFFE path validation and provides
-//! borrowed/owned conversion helpers similar to [`crate::TrustDomain`].
+//! The [`Path`] struct encapsulates SPIFFE path validation. Unlike
+//! [`crate::TrustDomain`], a path only has meaning within the context of a
+//! [`crate::SpiffeId`], so this type is a pure borrowed view — it cannot be
+//! constructed in an owned fashion.
 //!
 //! # Examples
 //!
@@ -27,15 +29,14 @@
 //!
 //! Returns a [`SpiffeIdError`] if the provided path is invalid according to SPIFFE specification.
 
-use alloc::{borrow::Cow, string::String};
 use core::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
 use crate::{SpiffeIdError, tri, validate_path};
 
 /// The path component of a SPIFFE ID.
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub struct Path<'a> {
-    path: Cow<'a, str>,
+    path: &'a str,
 }
 
 impl<'a> Path<'a> {
@@ -51,9 +52,7 @@ impl<'a> Path<'a> {
     pub fn new(path: &'a str) -> Result<Self, SpiffeIdError> {
         tri!(validate_path(path.as_bytes()));
 
-        Ok(Self {
-            path: Cow::Borrowed(path),
-        })
+        Ok(Self { path })
     }
 
     /// Creates a new `Path` in a constant context from a static string slice.
@@ -75,41 +74,17 @@ impl<'a> Path<'a> {
             panic!("invalid path");
         }
 
-        Path {
-            path: Cow::Borrowed(path),
-        }
-    }
-
-    /// Returns a borrowed version of this `Path`.
-    pub const fn borrow(&'a self) -> Self {
-        Path {
-            path: Cow::Borrowed(match &self.path {
-                Cow::Borrowed(x) => x,
-                Cow::Owned(x) => x.as_str(),
-            }),
-        }
-    }
-
-    /// Converts this `Path` into an owned `'static` value.
-    pub fn into_owned(self) -> Path<'static> {
-        Path {
-            path: Cow::Owned(self.path.into_owned()),
-        }
+        Path { path }
     }
 
     /// Returns this path as a string slice.
     pub const fn as_str(&self) -> &str {
-        match &self.path {
-            Cow::Borrowed(path) => path,
-            Cow::Owned(path) => path.as_str(),
-        }
+        self.path
     }
 
     /// Creates a `Path` without validation.
     pub(crate) const fn new_unchecked(path: &'a str) -> Self {
-        Self {
-            path: Cow::Borrowed(path),
-        }
+        Self { path }
     }
 }
 
@@ -118,35 +93,6 @@ impl<'a> TryFrom<&'a str> for Path<'a> {
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Self::new(value)
-    }
-}
-
-impl TryFrom<String> for Path<'static> {
-    type Error = SpiffeIdError;
-
-    fn try_from(path: String) -> Result<Self, Self::Error> {
-        tri!(Path::new(&path));
-
-        Ok(Path {
-            path: Cow::Owned(path),
-        })
-    }
-}
-
-impl<'a> TryFrom<Cow<'a, str>> for Path<'a> {
-    type Error = SpiffeIdError;
-
-    fn try_from(path: Cow<'a, str>) -> Result<Self, Self::Error> {
-        match path {
-            Cow::Borrowed(path) => path.try_into(),
-            Cow::Owned(path) => path.try_into(),
-        }
-    }
-}
-
-impl<'a> From<Path<'a>> for Cow<'a, str> {
-    fn from(value: Path<'a>) -> Self {
-        value.path
     }
 }
 
@@ -164,6 +110,6 @@ impl Debug for Path<'_> {
 
 impl Display for Path<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.write_str(&self.path)
+        f.write_str(self.path)
     }
 }
