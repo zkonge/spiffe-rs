@@ -80,7 +80,7 @@ pub trait SpiffeWorkloadApi: Send + Sync + 'static {
     /// Fetch WIT-SVIDs for all SPIFFE identities the workload is entitled to. If
     /// the identities which the workload is entitled to change, or, they are
     /// renewed, the server will stream subsequent messages to the client.
-    /// 
+    ///
     /// Must return Unimplemented where Workload API endpoint does not support the
     /// WIT-SVID profile.
     fn fetch_wit_svid(
